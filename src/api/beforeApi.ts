@@ -355,31 +355,32 @@ export const beforeApi = {
       otherCity?: string | null;
     }>
   ) {
-    const plans = locations.map((loc) => {
-      const householdMemberId = loc.householdMemberId || loc.memberId;
-      const rawType = (loc.expectedLocationType || loc.expectedType || 'HOME') as string;
-      const expectedLocationType = rawType === 'NOT_SURE' ? 'UNKNOWN' : rawType;
+    const locList = locations.map((loc) => {
+      const memberId = loc.memberId || loc.householdMemberId;
+      const rawType = (loc.expectedType || loc.expectedLocationType || 'HOME') as string;
+      const expectedType = rawType === 'NOT_SURE' ? 'UNKNOWN' : rawType;
 
-      const plan: any = {
-        householdMemberId,
-        expectedLocationType,
+      const item: any = {
+        memberId,
+        householdMemberId: memberId,
+        expectedType,
+        expectedLocationType: expectedType,
       };
 
-      if (expectedLocationType === 'SHELTER') {
+      if (expectedType === 'SHELTER') {
         if (loc.shelterId) {
-          plan.shelterId = loc.shelterId;
+          item.shelterId = loc.shelterId;
         }
-      } else if (expectedLocationType === 'OTHER_CITY') {
-        plan.otherCity = (loc.otherCity && loc.otherCity.trim()) || 'Outside Affected Area';
+      } else if (expectedType === 'OTHER_CITY') {
+        item.otherCity = (loc.otherCity && loc.otherCity.trim()) || 'Outside Affected Area';
       }
-      // Note: For HOME and UNKNOWN, neither shelterId nor otherCity should be sent
 
-      return plan;
+      return item;
     });
 
     return beforeRequest<any>(`/disasters/${disasterId}/expected-locations`, {
       method: 'POST',
-      body: JSON.stringify({ plans }),
+      body: JSON.stringify({ locations: locList }),
     });
   },
 

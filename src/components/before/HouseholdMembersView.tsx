@@ -144,12 +144,16 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
           rawType === 'NOT_SURE' ? 'UNKNOWN' : rawType;
 
         const item: {
+          memberId: string;
           householdMemberId: string;
+          expectedType: 'HOME' | 'SHELTER' | 'OTHER_CITY' | 'UNKNOWN';
           expectedLocationType: 'HOME' | 'SHELTER' | 'OTHER_CITY' | 'UNKNOWN';
           shelterId?: string;
           otherCity?: string;
         } = {
+          memberId: member.id,
           householdMemberId: member.id,
+          expectedType: expectedLocationType,
           expectedLocationType,
         };
 
@@ -167,8 +171,9 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
         return item;
       });
 
-      console.log('[HouseholdMembersView] Saving disaster plans payload:', { plans });
+      console.log('[HouseholdMembersView] Saving disaster plans payload:', { locations: plans });
       await disasterService.setExpectedLocations(activeDisaster.id, plans);
+      await loadHouseholdAndPlans();
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {

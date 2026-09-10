@@ -250,7 +250,7 @@ export async function getAffectedHouseholds(req: AuthenticatedRequest, res: Resp
 export async function setExpectedLocations(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id: disasterId } = req.params;
-    const { locations } = req.body; // Array of { memberId, expectedType, shelterId, otherCity }
+    const locations = req.body.locations || req.body.plans; // Array of { memberId, expectedType, shelterId, otherCity }
 
     if (!Array.isArray(locations) || locations.length === 0) {
       res.status(400).json({ error: 'locations array is required.' });
@@ -259,7 +259,15 @@ export async function setExpectedLocations(req: AuthenticatedRequest, res: Respo
 
     const results = [];
     for (const loc of locations) {
-      const { memberId, expectedType, shelterId, otherCity } = loc;
+      const memberId = loc.memberId || loc.householdMemberId;
+      const expectedType = loc.expectedType || loc.expectedLocationType || 'HOME';
+      const shelterId = loc.shelterId;
+      const otherCity = loc.otherCity;
+
+      if (!memberId) {
+        res.status(400).json({ error: 'memberId is required for each location item.' });
+        return;
+      }
 
       // Validate according to strict prompt guidelines:
       // HOME: No shelter, No other city

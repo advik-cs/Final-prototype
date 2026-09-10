@@ -700,6 +700,7 @@ async function getHouseholdDisasterOccupancy(req, res) {
 
 // src/server/routes/householdRoutes.ts
 var router2 = Router2();
+router2.get("/households/me", requireAuth, getMyHousehold);
 router2.post("/households", requireAuth, createHousehold);
 router2.get("/households/:id", requireAuth, getHousehold);
 router2.put("/households/:id", requireAuth, updateHousehold);
@@ -959,14 +960,21 @@ async function getAffectedHouseholds(req, res) {
 async function setExpectedLocations(req, res) {
   try {
     const { id: disasterId } = req.params;
-    const { locations } = req.body;
+    const locations = req.body.locations || req.body.plans;
     if (!Array.isArray(locations) || locations.length === 0) {
       res.status(400).json({ error: "locations array is required." });
       return;
     }
     const results = [];
     for (const loc of locations) {
-      const { memberId, expectedType, shelterId, otherCity } = loc;
+      const memberId = loc.memberId || loc.householdMemberId;
+      const expectedType = loc.expectedType || loc.expectedLocationType || "HOME";
+      const shelterId = loc.shelterId;
+      const otherCity = loc.otherCity;
+      if (!memberId) {
+        res.status(400).json({ error: "memberId is required for each location item." });
+        return;
+      }
       if (expectedType === "SHELTER" && !shelterId) {
         res.status(400).json({ error: `Shelter selection required for member ${memberId} when selecting SHELTER.` });
         return;
@@ -1958,6 +1966,8 @@ router3.get("/disasters/:id/buildings", requireAuth, getBuildingIntelligence);
 router3.get("/disasters/:id/zone-summary", requireAuth, getZoneSummary);
 router3.post("/disasters/:id/reconfirm", requireAuth, submitReconfirmation);
 router3.get("/disasters/:id/reconfirmation-status", requireAuth, getReconfirmationStatus);
+router3.get("/disasters/:id/reconfirmation/my-status", requireAuth, getReconfirmationStatus);
+router3.get("/disasters/:id/reconfirmations/status", requireAuth, getReconfirmationStatus);
 router3.get("/disasters/:id/my-status", requireAuth, getMyStatus);
 router3.post("/disasters/:id/status", requireAuth, updateStatus);
 router3.post("/disasters/:id/emergency-requests", requireAuth, createEmergencyRequest);

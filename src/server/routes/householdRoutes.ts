@@ -15,6 +15,7 @@ import { requireAuth } from '../middleware/auth.ts';
 const router = Router();
 
 // Household routes
+router.get('/households/me', requireAuth, getMyHousehold);
 router.post('/households', requireAuth, createHousehold);
 router.get('/households/:id', requireAuth, getHousehold);
 router.put('/households/:id', requireAuth, updateHousehold);

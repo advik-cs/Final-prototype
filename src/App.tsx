@@ -34,7 +34,13 @@ export default function App() {
   const [mode, setMode] = useState<DisasterMode>(() => {
     if (typeof window !== 'undefined') {
       const p = window.location.pathname.toLowerCase();
-      if (p === '/floodx' || window.location.hash === '#floodx') return 'FLOODX';
+      if (p === '/floodx' || window.location.hash === '#floodx') {
+        const stored = authService.getStoredUser();
+        if (stored?.role === 'CITIZEN') {
+          return 'BEFORE';
+        }
+        return 'FLOODX';
+      }
       if (p === '/during' || window.location.hash === '#during') return 'DURING';
     }
     return 'BEFORE';
@@ -50,6 +56,12 @@ export default function App() {
     const handlePopState = () => {
       const p = window.location.pathname.toLowerCase();
       if (p === '/floodx' || window.location.hash === '#floodx') {
+        const stored = authService.getStoredUser();
+        if (stored?.role === 'CITIZEN') {
+          setMode('BEFORE');
+          window.history.replaceState(null, '', '/before');
+          return;
+        }
         setMode('FLOODX');
       } else if (p === '/during' || window.location.hash === '#during') {
         setMode('DURING');
@@ -63,12 +75,26 @@ export default function App() {
     const user = authService.getStoredUser();
     if (user) {
       setCurrentUser(user);
+      if (user.role === 'CITIZEN' && (window.location.pathname.toLowerCase() === '/floodx' || window.location.hash === '#floodx')) {
+        setMode('BEFORE');
+        window.history.replaceState(null, '', '/before');
+      }
     }
     setAuthChecking(false);
     loadDisasters();
 
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Protect /floodx from citizen access: immediately redirect to /before and block FLOODX mode
+  useEffect(() => {
+    if (currentUser?.role === 'CITIZEN' && mode === 'FLOODX') {
+      setMode('BEFORE');
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', '/before');
+      }
+    }
+  }, [currentUser?.role, mode]);
 
   // Protect buildings tab from citizen access
   useEffect(() => {
@@ -98,6 +124,12 @@ export default function App() {
 
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
+    if (user.role === 'CITIZEN' && mode === 'FLOODX') {
+      setMode('BEFORE');
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', '/before');
+      }
+    }
     loadDisasters();
   };
 
@@ -108,6 +140,9 @@ export default function App() {
 
   // Switch mode and update browser URL path
   const handleSwitchMode = (newMode: DisasterMode) => {
+    if (currentUser?.role === 'CITIZEN' && newMode === 'FLOODX') {
+      newMode = 'BEFORE';
+    }
     setMode(newMode);
     const targetPath =
       newMode === 'FLOODX' ? '/floodx' : newMode === 'DURING' ? '/during' : '/before';
@@ -256,7 +291,7 @@ export default function App() {
       )}
 
       {/* MODE 3: FLOODX SATELLITE INTELLIGENCE (EMBEDDED) */}
-      {mode === 'FLOODX' && (
+      {mode === 'FLOODX' && currentUser.role !== 'CITIZEN' && (
         <FloodXView
           onReturnToMode={(targetMode) => handleSwitchMode(targetMode)}
         />
