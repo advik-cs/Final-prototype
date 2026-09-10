@@ -1,4 +1,4 @@
-export type UserRole = 'CITIZEN' | 'RESCUER';
+export type UserRole = 'CITIZEN' | 'RESCUER' | 'AUTHORITY';
 
 export type DisasterType = 'FLOOD' | 'CYCLONE' | 'EARTHQUAKE' | 'LANDSLIDE' | 'OTHER';
 

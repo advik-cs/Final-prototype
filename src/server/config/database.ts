@@ -10,6 +10,10 @@ if (process.env.VERCEL && (!process.env.DATABASE_URL || process.env.DATABASE_URL
       path.join(process.cwd(), 'prisma', 'dev.db'),
       path.join(process.cwd(), 'dev.db'),
       path.resolve(process.cwd(), 'prisma', 'dev.db'),
+      path.join(__dirname, '..', '..', '..', 'prisma', 'dev.db'),
+      path.join(__dirname, '..', '..', 'prisma', 'dev.db'),
+      path.join(__dirname, '..', 'prisma', 'dev.db'),
+      path.join(__dirname, 'prisma', 'dev.db'),
     ];
     for (const src of candidatePaths) {
       if (fs.existsSync(src)) {

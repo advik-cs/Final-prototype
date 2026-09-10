@@ -8,6 +8,6 @@ const router = Router();
 router.get('/map/citizen', requireAuth, getCitizenMapData);
 
 // Rescuer map with all registered houses & 5km facility coverage
-router.get('/map/rescuer', requireAuth, requireRole('RESCUER'), getRescuerMapData);
+router.get('/map/rescuer', requireAuth, requireRole(['RESCUER', 'AUTHORITY']), getRescuerMapData);
 
 export default router;

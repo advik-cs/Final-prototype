@@ -1,11 +1,15 @@
 {
   "version": 2,
   "functions": {
-    "api/**": {
+    "api/index.ts": {
       "includeFiles": "prisma/**"
     }
   },
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api?__route=/api/$1"
+    },
     {
       "source": "/before",
       "destination": "/index.html"

@@ -18,6 +18,31 @@ export function createApp() {
   app.use(cors());
   app.use(express.json());
 
+  // Vercel serverless request path preservation
+  app.use((req, _res, next) => {
+    const queryRoute = req.query?.__route as string | undefined;
+    if (queryRoute) {
+      delete req.query.__route;
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(req.query)) {
+        if (typeof value === 'string') searchParams.set(key, value);
+      }
+      const qs = searchParams.toString();
+      req.url = qs ? `${queryRoute}?${qs}` : queryRoute;
+    } else {
+      const candidate =
+        (req.headers['x-matched-path'] as string) ||
+        (req.headers['x-vercel-original-path'] as string) ||
+        (req.headers['x-forwarded-uri'] as string) ||
+        req.originalUrl;
+
+      if (candidate && candidate.startsWith('/api') && req.url !== candidate) {
+        req.url = candidate;
+      }
+    }
+    next();
+  });
+
   // Health check endpoint required by spec
   app.get(['/api/health', '/health'], async (req, res) => {
     try {
