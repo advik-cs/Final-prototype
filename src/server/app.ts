@@ -19,7 +19,7 @@ export function createApp() {
   app.use(express.json());
 
   // Health check endpoint required by spec
-  app.get('/api/health', async (req, res) => {
+  app.get(['/api/health', '/health'], async (req, res) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
       res.json({
@@ -38,15 +38,20 @@ export function createApp() {
     }
   });
 
-  // REST API Routes
-  app.use('/api/auth', authRoutes);
-  app.use('/api', householdRoutes);
-  app.use('/api', disasterRoutes);
-  app.use('/api', shelterRoutes);
-  app.use('/api', facilityRoutes);
-  app.use('/api', mapRoutes);
-  app.use('/api', emergencyRoutes);
-  app.use('/api', notificationRoutes);
+  // REST API Routes - mounted on both '/api' and root for Vercel serverless flexibility
+  const mountRoutes = (prefix: string) => {
+    app.use(`${prefix}/auth`, authRoutes);
+    app.use(prefix, householdRoutes);
+    app.use(prefix, disasterRoutes);
+    app.use(prefix, shelterRoutes);
+    app.use(prefix, facilityRoutes);
+    app.use(prefix, mapRoutes);
+    app.use(prefix, emergencyRoutes);
+    app.use(prefix, notificationRoutes);
+  };
+
+  mountRoutes('/api');
+  mountRoutes('');
 
   // Centralized Error Handling
   app.use(errorHandler);

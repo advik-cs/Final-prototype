@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "functions": {
+    "api/[...slug].ts": {
+      "includeFiles": "prisma/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

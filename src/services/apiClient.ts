@@ -3,7 +3,22 @@
  * Centralized HTTP request utility with JWT authentication and consistent error handling.
  */
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+const env = (import.meta as any).env || {};
+const universalBase = env.VITE_API_BASE_URL || env.VITE_API_URL || env.VITE_BEFORE_API_URL || '';
+const cleanUniversal = universalBase ? universalBase.replace(/\/+$/, '') : '';
+const universalApi = cleanUniversal
+  ? (cleanUniversal.endsWith('/api') ? cleanUniversal : `${cleanUniversal}/api`)
+  : '';
+
+const isLocal =
+  typeof window !== 'undefined'
+    ? window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.') ||
+      window.location.hostname.startsWith('10.')
+    : true;
+
+const API_BASE_URL = universalApi || (isLocal ? 'http://localhost:4000/api' : '/api');
 
 export class ApiError extends Error {
   statusCode: number;
