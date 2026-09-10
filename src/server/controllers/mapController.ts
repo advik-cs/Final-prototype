@@ -3,7 +3,7 @@ import prisma from '../config/database.ts';
 import { AuthenticatedRequest } from '../middleware/auth.ts';
 import { calculateHaversineDistance } from '../utils/geo.ts';
 
-const DEFAULT_MAP_RADIUS_KM = 5.0;
+const DEFAULT_MAP_RADIUS_KM = 5.5;
 
 export async function getCitizenMapData(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -34,16 +34,47 @@ export async function getCitizenMapData(req: AuthenticatedRequest, res: Response
     const homeLat = household.latitude;
     const homeLng = household.longitude;
 
-    // Fetch all shelters and filter within 5 km
+    // Fetch all shelters, calculate live occupancy & filter within perimeter
     const allShelters = await prisma.shelter.findMany();
+    const expectedLocations = await prisma.expectedLocation.findMany({
+      where: disasterId
+        ? { disasterId: String(disasterId), expectedType: 'SHELTER', shelterId: { not: null } }
+        : { expectedType: 'SHELTER', shelterId: { not: null } },
+    });
+    const arrivalsMap: Record<string, number> = {};
+    for (const loc of expectedLocations) {
+      if (loc.shelterId) {
+        arrivalsMap[loc.shelterId] = (arrivalsMap[loc.shelterId] || 0) + 1;
+      }
+    }
+
     const sheltersWithinRadius = allShelters
-      .map((s) => ({
-        ...s,
-        distanceKm: Math.round(calculateHaversineDistance(homeLat, homeLng, s.latitude, s.longitude) * 100) / 100,
-      }))
+      .map((s) => {
+        const expectedArrivals = arrivalsMap[s.id] || 0;
+        const remainingCapacity = s.capacity - expectedArrivals;
+        let calculatedStatus = s.status;
+        if (remainingCapacity < 0) {
+          calculatedStatus = 'OVER_CAPACITY';
+        } else if (remainingCapacity === 0) {
+          calculatedStatus = 'FULL';
+        } else if (remainingCapacity <= Math.max(2, s.capacity * 0.2)) {
+          calculatedStatus = 'NEAR_CAPACITY';
+        } else {
+          calculatedStatus = 'AVAILABLE';
+        }
+
+        return {
+          ...s,
+          expectedArrivals,
+          remainingCapacity,
+          occupancyPercentage: Math.min(100, Math.round((expectedArrivals / s.capacity) * 100)),
+          status: calculatedStatus,
+          distanceKm: Math.round(calculateHaversineDistance(homeLat, homeLng, s.latitude, s.longitude) * 100) / 100,
+        };
+      })
       .filter((s) => s.distanceKm <= DEFAULT_MAP_RADIUS_KM);
 
-    // Fetch all facilities within 5 km
+    // Fetch all facilities within radius
     const allFacilities = await prisma.emergencyFacility.findMany();
     const facilitiesWithinRadius = allFacilities
       .map((f) => ({
@@ -116,6 +147,41 @@ export async function getRescuerMapData(req: AuthenticatedRequest, res: Response
     });
 
     const shelters = await prisma.shelter.findMany();
+    const expectedLocations = await prisma.expectedLocation.findMany({
+      where: disasterId
+        ? { disasterId: String(disasterId), expectedType: 'SHELTER', shelterId: { not: null } }
+        : { expectedType: 'SHELTER', shelterId: { not: null } },
+    });
+    const arrivalsMap: Record<string, number> = {};
+    for (const loc of expectedLocations) {
+      if (loc.shelterId) {
+        arrivalsMap[loc.shelterId] = (arrivalsMap[loc.shelterId] || 0) + 1;
+      }
+    }
+
+    const sheltersWithOccupancy = shelters.map((s) => {
+      const expectedArrivals = arrivalsMap[s.id] || 0;
+      const remainingCapacity = s.capacity - expectedArrivals;
+      let calculatedStatus = s.status;
+      if (remainingCapacity < 0) {
+        calculatedStatus = 'OVER_CAPACITY';
+      } else if (remainingCapacity === 0) {
+        calculatedStatus = 'FULL';
+      } else if (remainingCapacity <= Math.max(2, s.capacity * 0.2)) {
+        calculatedStatus = 'NEAR_CAPACITY';
+      } else {
+        calculatedStatus = 'AVAILABLE';
+      }
+
+      return {
+        ...s,
+        expectedArrivals,
+        remainingCapacity,
+        occupancyPercentage: Math.min(100, Math.round((expectedArrivals / s.capacity) * 100)),
+        status: calculatedStatus,
+      };
+    });
+
     const facilities = await prisma.emergencyFacility.findMany();
     const roads = await prisma.road.findMany();
 
@@ -148,12 +214,12 @@ export async function getRescuerMapData(req: AuthenticatedRequest, res: Response
       });
     }
 
-    // For each registered house, map facilities within 5km
+    // For each registered house, map facilities within perimeter
     const housesWithNearbyFacilities = households.map((h) => {
       const nearbyFacilities = facilities.filter(
         (f) => calculateHaversineDistance(h.latitude, h.longitude, f.latitude, f.longitude) <= DEFAULT_MAP_RADIUS_KM
       );
-      const nearbyShelters = shelters.filter(
+      const nearbyShelters = sheltersWithOccupancy.filter(
         (s) => calculateHaversineDistance(h.latitude, h.longitude, s.latitude, s.longitude) <= DEFAULT_MAP_RADIUS_KM
       );
 
@@ -195,7 +261,7 @@ export async function getRescuerMapData(req: AuthenticatedRequest, res: Response
 
     res.json({
       households: housesWithNearbyFacilities,
-      shelters,
+      shelters: sheltersWithOccupancy,
       facilities,
       roads,
       zones,

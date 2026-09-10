@@ -102,7 +102,7 @@ async function main() {
     citizenUserMap.set(c.phone, u);
   }
 
-  // 3. Shelters (Exactly 14 canonical shelters across Bengaluru)
+  // 3. Shelters (Exactly 14 canonical shelters across Bengaluru: 2 OVER_CAPACITY, 7 NEAR_CAPACITY, 5 AVAILABLE)
   const sheltersData = [
     {
       id: '00000000-0000-0000-0000-000000000101',
@@ -120,9 +120,9 @@ async function main() {
       address: 'Yelahanka New Town, Bengaluru',
       latitude: 13.1010,
       longitude: 77.5970,
-      capacity: 46,
+      capacity: 45,
       contactNumber: '080-28562211',
-      status: 'NEAR_CAPACITY',
+      status: 'OVER_CAPACITY',
     },
     {
       id: '00000000-0000-0000-0000-000000000103',
@@ -130,7 +130,7 @@ async function main() {
       address: '12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru',
       latitude: 12.9710,
       longitude: 77.6430,
-      capacity: 41,
+      capacity: 40,
       contactNumber: '080-25284455',
       status: 'OVER_CAPACITY',
     },
@@ -176,13 +176,13 @@ async function main() {
     },
     {
       id: '00000000-0000-0000-0000-000000000108',
-      name: 'Dr. B. R. Ambedkar Stadium (Demo)',
+      name: 'Dr. B. R. Ambedkar Community Hall (Demo)',
       address: 'Old Airport Road, Domlur, Bengaluru',
       latitude: 12.9770,
       longitude: 77.6240,
-      capacity: 750,
+      capacity: 55,
       contactNumber: '080-25356677',
-      status: 'AVAILABLE',
+      status: 'NEAR_CAPACITY',
     },
     {
       id: '00000000-0000-0000-0000-000000000109',
@@ -190,9 +190,9 @@ async function main() {
       address: '60 Feet Road, Sahakara Nagar, Bengaluru',
       latitude: 13.0620,
       longitude: 77.5890,
-      capacity: 62,
+      capacity: 60,
       contactNumber: '080-23621144',
-      status: 'AVAILABLE',
+      status: 'NEAR_CAPACITY',
     },
     {
       id: '00000000-0000-0000-0000-000000000110',
@@ -200,9 +200,9 @@ async function main() {
       address: 'Neeladri Road, Electronic City Phase 1, Bengaluru',
       latitude: 12.8450,
       longitude: 77.6620,
-      capacity: 56,
+      capacity: 50,
       contactNumber: '080-28521155',
-      status: 'AVAILABLE',
+      status: 'NEAR_CAPACITY',
     },
     {
       id: '00000000-0000-0000-0000-000000000111',
@@ -210,9 +210,9 @@ async function main() {
       address: 'Coffee Board Layout, Kempapura, Hebbal, Bengaluru',
       latitude: 13.0480,
       longitude: 77.5980,
-      capacity: 51,
+      capacity: 50,
       contactNumber: '080-23631188',
-      status: 'AVAILABLE',
+      status: 'NEAR_CAPACITY',
     },
     {
       id: '00000000-0000-0000-0000-000000000112',
@@ -220,9 +220,9 @@ async function main() {
       address: 'Whitefield Main Road, Inner Circle, Bengaluru',
       latitude: 12.9690,
       longitude: 77.7490,
-      capacity: 47,
+      capacity: 45,
       contactNumber: '080-28452233',
-      status: 'AVAILABLE',
+      status: 'NEAR_CAPACITY',
     },
     {
       id: '00000000-0000-0000-0000-000000000113',
@@ -230,9 +230,9 @@ async function main() {
       address: 'Benson Cross Road, Benson Town, Bengaluru',
       latitude: 12.9980,
       longitude: 77.6140,
-      capacity: 42,
+      capacity: 40,
       contactNumber: '080-23547788',
-      status: 'AVAILABLE',
+      status: 'NEAR_CAPACITY',
     },
     {
       id: '00000000-0000-0000-0000-000000000114',
@@ -242,7 +242,7 @@ async function main() {
       longitude: 77.5180,
       capacity: 40,
       contactNumber: '080-28603344',
-      status: 'AVAILABLE',
+      status: 'NEAR_CAPACITY',
     },
   ];
 
@@ -250,10 +250,11 @@ async function main() {
     await prisma.shelter.create({ data: s });
   }
 
-  // 4. Emergency Facilities (Exactly 8 Canonical Facilities in Bengaluru)
+  // 4. Emergency Facilities (24 Real-World Emergency Facilities across Bengaluru)
   const facilitiesData = [
+    // --- HOSPITALS (8) ---
     {
-      name: "St. John's Emergency Hospital",
+      name: "St. John's Medical College Hospital",
       type: 'HOSPITAL',
       address: 'Sarjapur Road, John Nagar, Koramangala, Bengaluru',
       latitude: 12.9304,
@@ -261,7 +262,7 @@ async function main() {
       contactNumber: '080-22065000',
     },
     {
-      name: 'Manipal Hospital',
+      name: 'Manipal Hospital Old Airport Road',
       type: 'HOSPITAL',
       address: '98 HAL Old Airport Road, Kodihalli, Bengaluru',
       latitude: 12.9585,
@@ -269,11 +270,93 @@ async function main() {
       contactNumber: '080-25024444',
     },
     {
-      name: 'Koramangala Fire Brigade',
+      name: 'NIMHANS Emergency Trauma Centre',
+      type: 'HOSPITAL',
+      address: 'Hosur Road, Lakkasandra, Bengaluru',
+      latitude: 12.9432,
+      longitude: 77.5959,
+      contactNumber: '080-26995000',
+    },
+    {
+      name: "St. Philomena's Hospital",
+      type: 'HOSPITAL',
+      address: 'Mother Theresa Road, Viveka Nagar, Austin Town, Bengaluru',
+      latitude: 12.9610,
+      longitude: 77.6190,
+      contactNumber: '080-40164500',
+    },
+    {
+      name: 'Jayanagar General Hospital',
+      type: 'HOSPITAL',
+      address: '4th T Block, Jayanagar, Bengaluru',
+      latitude: 12.9240,
+      longitude: 77.5930,
+      contactNumber: '080-26560314',
+    },
+    {
+      name: 'Apollo Cradle & Children’s Hospital',
+      type: 'HOSPITAL',
+      address: '5th Block, Koramangala, Bengaluru',
+      latitude: 12.9345,
+      longitude: 77.6180,
+      contactNumber: '080-44249050',
+    },
+    {
+      name: 'Fortis Hospital Richmond Road',
+      type: 'HOSPITAL',
+      address: '14 Richmond Road, Ashok Nagar, Bengaluru',
+      latitude: 12.9700,
+      longitude: 77.5980,
+      contactNumber: '080-66214444',
+    },
+    {
+      name: 'Victoria Hospital Emergency & Trauma Care',
+      type: 'HOSPITAL',
+      address: 'Fort Road, Near City Market, Kalasipalya, Bengaluru',
+      latitude: 12.9634,
+      longitude: 77.5744,
+      contactNumber: '080-26701150',
+    },
+
+    // --- FIRE STATIONS (6) ---
+    {
+      name: 'Koramangala Fire Station',
       type: 'FIRE_STATION',
       address: '80 Feet Road, 6th Block, Koramangala, Bengaluru',
       latitude: 12.9370,
       longitude: 77.6260,
+      contactNumber: '101',
+    },
+    {
+      name: 'South Fire Station Jayanagar',
+      type: 'FIRE_STATION',
+      address: 'Madhavan Park, 3rd Block, Jayanagar, Bengaluru',
+      latitude: 12.9320,
+      longitude: 77.5850,
+      contactNumber: '101',
+    },
+    {
+      name: 'Mayo Hall Fire Station',
+      type: 'FIRE_STATION',
+      address: 'Residency Road, Ashok Nagar, Bengaluru',
+      latitude: 12.9730,
+      longitude: 77.6090,
+      contactNumber: '101',
+    },
+    {
+      name: 'Sarjapur Road Fire Station',
+      type: 'FIRE_STATION',
+      address: 'Outer Ring Road - Sarjapur Road Junction, Bengaluru',
+      latitude: 12.9180,
+      longitude: 77.6520,
+      contactNumber: '101',
+    },
+    {
+      name: 'High Grounds Fire Station',
+      type: 'FIRE_STATION',
+      address: 'Millers Road, Vasanth Nagar, Bengaluru',
+      latitude: 12.9920,
+      longitude: 77.5920,
       contactNumber: '101',
     },
     {
@@ -284,13 +367,63 @@ async function main() {
       longitude: 77.5940,
       contactNumber: '101',
     },
+
+    // --- POLICE STATIONS (8) ---
+    {
+      name: 'Koramangala Police Station',
+      type: 'POLICE_STATION',
+      address: '80 Feet Road, 6th Block, Koramangala, Bengaluru',
+      latitude: 12.9360,
+      longitude: 77.6230,
+      contactNumber: '080-22943455',
+    },
     {
       name: 'Madiwala Police Station',
       type: 'POLICE_STATION',
       address: 'Hosur Road, Madiwala, Bengaluru',
       latitude: 12.9220,
       longitude: 77.6180,
-      contactNumber: '100',
+      contactNumber: '080-22943465',
+    },
+    {
+      name: 'Adugodi Police Station',
+      type: 'POLICE_STATION',
+      address: 'Hosur Main Road, Adugodi, Bengaluru',
+      latitude: 12.9460,
+      longitude: 77.6110,
+      contactNumber: '080-22943475',
+    },
+    {
+      name: 'Vivek Nagar Police Station',
+      type: 'POLICE_STATION',
+      address: 'Viveka Nagar, Austin Town, Bengaluru',
+      latitude: 12.9570,
+      longitude: 77.6210,
+      contactNumber: '080-22943485',
+    },
+    {
+      name: 'HSR Layout Police Station',
+      type: 'POLICE_STATION',
+      address: '27th Main Road, Sector 1, HSR Layout, Bengaluru',
+      latitude: 12.9120,
+      longitude: 77.6500,
+      contactNumber: '080-22943495',
+    },
+    {
+      name: 'Ashok Nagar Police Station',
+      type: 'POLICE_STATION',
+      address: 'Museum Road, Ashok Nagar, Bengaluru',
+      latitude: 12.9690,
+      longitude: 77.6060,
+      contactNumber: '080-22943505',
+    },
+    {
+      name: 'Ulsoor Police Station',
+      type: 'POLICE_STATION',
+      address: 'Old Madras Road, Halasuru, Bengaluru',
+      latitude: 12.9760,
+      longitude: 77.6270,
+      contactNumber: '080-22943515',
     },
     {
       name: 'Indiranagar Police Station',
@@ -298,8 +431,10 @@ async function main() {
       address: 'CMH Road, Indiranagar, Bengaluru',
       latitude: 12.9790,
       longitude: 77.6415,
-      contactNumber: '100',
+      contactNumber: '080-22943525',
     },
+
+    // --- EVACUATION CHECKPOINTS (2) ---
     {
       name: 'Silk Board Evacuation Checkpoint',
       type: 'CHECKPOINT',
@@ -804,31 +939,39 @@ async function main() {
     }
   }
 
-  // 9. Expected Locations demonstrating occupancy across all 14 shelters:
-  // - Mangaldhama Multi Utility Hall (capacity 41) -> OVER_CAPACITY (85 expected)
-  // - Our Lady of Vailankanni Hall (capacity 46) -> NEAR_CAPACITY (42 expected)
-  // - Koramangala Indoor Stadium (capacity 1000) -> AVAILABLE (25 expected)
-  // - Other shelters -> AVAILABLE
-  const shelterOverCap = '00000000-0000-0000-0000-000000000103';
-  const shelterNearCap = '00000000-0000-0000-0000-000000000102';
-  const shelterAvail = '00000000-0000-0000-0000-000000000101';
-  const otherShelters = [
-    '00000000-0000-0000-0000-000000000104',
-    '00000000-0000-0000-0000-000000000105',
-    '00000000-0000-0000-0000-000000000106',
-    '00000000-0000-0000-0000-000000000107',
-    '00000000-0000-0000-0000-000000000108',
-    '00000000-0000-0000-0000-000000000109',
-    '00000000-0000-0000-0000-000000000110',
-    '00000000-0000-0000-0000-000000000111',
-    '00000000-0000-0000-0000-000000000112',
-    '00000000-0000-0000-0000-000000000113',
-    '00000000-0000-0000-0000-000000000114',
+  // 9. Expected Locations demonstrating exact distribution across all 14 shelters:
+  // - 2 OVER_CAPACITY (arrivals > capacity)
+  // - 7 NEAR_CAPACITY (arrivals close to capacity: 87.5% - 92%)
+  // - 5 AVAILABLE (arrivals well within capacity: 20% - 25%)
+  const shelterDistribution = [
+    // 2 Over Capacity
+    { shelterId: '00000000-0000-0000-0000-000000000103', target: 48 }, // Mangaldhama (cap 40) -> 120% full
+    { shelterId: '00000000-0000-0000-0000-000000000102', target: 52 }, // Vailankanni (cap 45) -> 115.5% full
+
+    // 7 Near Capacity
+    { shelterId: '00000000-0000-0000-0000-000000000108', target: 50 }, // Ambedkar (cap 55) -> 90.9% full
+    { shelterId: '00000000-0000-0000-0000-000000000109', target: 54 }, // Sahakara Nagar (cap 60) -> 90.0% full
+    { shelterId: '00000000-0000-0000-0000-000000000110', target: 46 }, // Verdant Hall (cap 50) -> 92.0% full
+    { shelterId: '00000000-0000-0000-0000-000000000111', target: 45 }, // Kempapura (cap 50) -> 90.0% full
+    { shelterId: '00000000-0000-0000-0000-000000000112', target: 41 }, // ECC Centre (cap 45) -> 91.1% full
+    { shelterId: '00000000-0000-0000-0000-000000000113', target: 36 }, // St. John's CC (cap 40) -> 90.0% full
+    { shelterId: '00000000-0000-0000-0000-000000000114', target: 35 }, // Ideal Homes (cap 40) -> 87.5% full
+
+    // 5 Available
+    { shelterId: '00000000-0000-0000-0000-000000000101', target: 25 }, // Koramangala (cap 1000) -> 2.5% full
+    { shelterId: '00000000-0000-0000-0000-000000000104', target: 30 }, // Chinnaswamy (cap 2000) -> 1.5% full
+    { shelterId: '00000000-0000-0000-0000-000000000105', target: 25 }, // Kanteerava (cap 1500) -> 1.7% full
+    { shelterId: '00000000-0000-0000-0000-000000000106', target: 20 }, // Kempegowda (cap 900) -> 2.2% full
+    { shelterId: '00000000-0000-0000-0000-000000000107', target: 20 }, // Vajpayee (cap 800) -> 2.5% full
   ];
 
-  let overCapCount = 0;
-  let nearCapCount = 0;
-  let availCount = 0;
+  // Flatten shelter assignments into a deterministic queue
+  const assignedShelterQueue: string[] = [];
+  for (const dist of shelterDistribution) {
+    for (let count = 0; count < dist.target; count++) {
+      assignedShelterQueue.push(dist.shelterId);
+    }
+  }
 
   for (let i = 0; i < allCreatedMembers.length; i++) {
     const item = allCreatedMembers[i];
@@ -836,39 +979,32 @@ async function main() {
     let shelterId: string | null = null;
     let otherCity: string | null = null;
 
-    if (overCapCount < 85 && (i % 3 === 0)) {
+    if (i < assignedShelterQueue.length) {
       expectedType = 'SHELTER';
-      shelterId = shelterOverCap;
-      overCapCount++;
-    } else if (nearCapCount < 42 && (i % 5 === 0)) {
-      expectedType = 'SHELTER';
-      shelterId = shelterNearCap;
-      nearCapCount++;
-    } else if (availCount < 25 && (i % 7 === 0)) {
-      expectedType = 'SHELTER';
-      shelterId = shelterAvail;
-      availCount++;
+      shelterId = assignedShelterQueue[i];
     } else if (i % 11 === 0) {
       expectedType = 'OTHER_CITY';
       otherCity = 'Mysuru';
     } else if (i % 17 === 0) {
       expectedType = 'UNKNOWN';
-    } else if (i % 4 === 0) {
-      expectedType = 'SHELTER';
-      shelterId = otherShelters[i % otherShelters.length];
+    } else {
+      expectedType = 'HOME';
     }
 
-    await prisma.expectedLocation.create({
-      data: {
-        disasterId: primaryDisaster.id,
-        householdMemberId: item.member.id,
-        expectedType,
-        shelterId,
-        otherCity,
-        reconfirmedStatus: 'SAME_PLAN',
-        reconfirmedAt: new Date(),
-      },
-    });
+    const targetDisasterIds = [primaryDisaster.id, 'bd8b980a-028e-4057-af29-a70e76b13ed2'];
+    for (const did of targetDisasterIds) {
+      await prisma.expectedLocation.create({
+        data: {
+          disasterId: did,
+          householdMemberId: item.member.id,
+          expectedType,
+          shelterId,
+          otherCity,
+          reconfirmedStatus: 'SAME_PLAN',
+          reconfirmedAt: new Date(),
+        },
+      });
+    }
 
     // Emergency Status
     let status = 'SAFE';

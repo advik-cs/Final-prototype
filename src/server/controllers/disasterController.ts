@@ -32,16 +32,36 @@ export async function createDisaster(req: AuthenticatedRequest, res: Response): 
   }
 }
 
+const SEVERITY_ORDER: Record<string, number> = {
+  RED: 1,
+  ORANGE: 2,
+  YELLOW: 3,
+  GREEN: 4,
+};
+
+export function sortDisasterThreats<T extends { alertLevel?: string | null; predictedStartTime?: Date | string | null; createdAt?: Date | string | null }>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    const sevA = SEVERITY_ORDER[String(a.alertLevel).toUpperCase()] ?? 99;
+    const sevB = SEVERITY_ORDER[String(b.alertLevel).toUpperCase()] ?? 99;
+    if (sevA !== sevB) {
+      return sevA - sevB; // RED (1) before ORANGE (2)
+    }
+    const timeA = new Date(a.predictedStartTime || a.createdAt || 0).getTime();
+    const timeB = new Date(b.predictedStartTime || b.createdAt || 0).getTime();
+    return timeA - timeB; // Earliest onset first
+  });
+}
+
 export async function getDisasters(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const disasters = await prisma.disasterEvent.findMany({
-      orderBy: { createdAt: 'desc' },
       include: {
         affectedZones: true,
       },
     });
 
-    res.json(disasters);
+    const sortedDisasters = sortDisasterThreats(disasters);
+    res.json(sortedDisasters);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch disasters.' });
   }

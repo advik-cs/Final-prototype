@@ -125,7 +125,9 @@ export async function getShelterOccupancy(req: AuthenticatedRequest, res: Respon
 
       let calculatedStatus: 'AVAILABLE' | 'NEAR_CAPACITY' | 'FULL' | 'OVER_CAPACITY' = 'AVAILABLE';
 
-      if (remainingCapacity < 0) {
+      if (expectedLocations.length === 0 && (s.status === 'OVER_CAPACITY' || s.status === 'NEAR_CAPACITY' || s.status === 'AVAILABLE')) {
+        calculatedStatus = s.status as any;
+      } else if (remainingCapacity < 0) {
         calculatedStatus = 'OVER_CAPACITY';
       } else if (remainingCapacity === 0) {
         calculatedStatus = 'FULL';

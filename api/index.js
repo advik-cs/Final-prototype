@@ -778,15 +778,33 @@ async function createDisaster(req, res) {
     res.status(500).json({ error: error.message || "Failed to create disaster event." });
   }
 }
+var SEVERITY_ORDER = {
+  RED: 1,
+  ORANGE: 2,
+  YELLOW: 3,
+  GREEN: 4
+};
+function sortDisasterThreats(list) {
+  return [...list].sort((a, b) => {
+    const sevA = SEVERITY_ORDER[String(a.alertLevel).toUpperCase()] ?? 99;
+    const sevB = SEVERITY_ORDER[String(b.alertLevel).toUpperCase()] ?? 99;
+    if (sevA !== sevB) {
+      return sevA - sevB;
+    }
+    const timeA = new Date(a.predictedStartTime || a.createdAt || 0).getTime();
+    const timeB = new Date(b.predictedStartTime || b.createdAt || 0).getTime();
+    return timeA - timeB;
+  });
+}
 async function getDisasters(req, res) {
   try {
     const disasters = await database_default.disasterEvent.findMany({
-      orderBy: { createdAt: "desc" },
       include: {
         affectedZones: true
       }
     });
-    res.json(disasters);
+    const sortedDisasters = sortDisasterThreats(disasters);
+    res.json(sortedDisasters);
   } catch (error) {
     res.status(500).json({ error: error.message || "Failed to fetch disasters." });
   }
@@ -1412,7 +1430,9 @@ async function getShelterOccupancy(req, res) {
       const expectedArrivals = arrivalsMap[s.id] || 0;
       const remainingCapacity = s.capacity - expectedArrivals;
       let calculatedStatus = "AVAILABLE";
-      if (remainingCapacity < 0) {
+      if (expectedLocations.length === 0 && (s.status === "OVER_CAPACITY" || s.status === "NEAR_CAPACITY" || s.status === "AVAILABLE")) {
+        calculatedStatus = s.status;
+      } else if (remainingCapacity < 0) {
         calculatedStatus = "OVER_CAPACITY";
       } else if (remainingCapacity === 0) {
         calculatedStatus = "FULL";
@@ -2042,7 +2062,7 @@ var facilityRoutes_default = router5;
 import { Router as Router6 } from "express";
 
 // src/server/controllers/mapController.ts
-var DEFAULT_MAP_RADIUS_KM = 5;
+var DEFAULT_MAP_RADIUS_KM = 5.5;
 async function getCitizenMapData(req, res) {
   try {
     const userId = req.user.userId;
@@ -2065,10 +2085,37 @@ async function getCitizenMapData(req, res) {
     const homeLat = household.latitude;
     const homeLng = household.longitude;
     const allShelters = await database_default.shelter.findMany();
-    const sheltersWithinRadius = allShelters.map((s) => ({
-      ...s,
-      distanceKm: Math.round(calculateHaversineDistance(homeLat, homeLng, s.latitude, s.longitude) * 100) / 100
-    })).filter((s) => s.distanceKm <= DEFAULT_MAP_RADIUS_KM);
+    const expectedLocations = await database_default.expectedLocation.findMany({
+      where: disasterId ? { disasterId: String(disasterId), expectedType: "SHELTER", shelterId: { not: null } } : { expectedType: "SHELTER", shelterId: { not: null } }
+    });
+    const arrivalsMap = {};
+    for (const loc of expectedLocations) {
+      if (loc.shelterId) {
+        arrivalsMap[loc.shelterId] = (arrivalsMap[loc.shelterId] || 0) + 1;
+      }
+    }
+    const sheltersWithinRadius = allShelters.map((s) => {
+      const expectedArrivals = arrivalsMap[s.id] || 0;
+      const remainingCapacity = s.capacity - expectedArrivals;
+      let calculatedStatus = s.status;
+      if (remainingCapacity < 0) {
+        calculatedStatus = "OVER_CAPACITY";
+      } else if (remainingCapacity === 0) {
+        calculatedStatus = "FULL";
+      } else if (remainingCapacity <= Math.max(2, s.capacity * 0.2)) {
+        calculatedStatus = "NEAR_CAPACITY";
+      } else {
+        calculatedStatus = "AVAILABLE";
+      }
+      return {
+        ...s,
+        expectedArrivals,
+        remainingCapacity,
+        occupancyPercentage: Math.min(100, Math.round(expectedArrivals / s.capacity * 100)),
+        status: calculatedStatus,
+        distanceKm: Math.round(calculateHaversineDistance(homeLat, homeLng, s.latitude, s.longitude) * 100) / 100
+      };
+    }).filter((s) => s.distanceKm <= DEFAULT_MAP_RADIUS_KM);
     const allFacilities = await database_default.emergencyFacility.findMany();
     const facilitiesWithinRadius = allFacilities.map((f) => ({
       ...f,
@@ -2128,6 +2175,36 @@ async function getRescuerMapData(req, res) {
       }
     });
     const shelters = await database_default.shelter.findMany();
+    const expectedLocations = await database_default.expectedLocation.findMany({
+      where: disasterId ? { disasterId: String(disasterId), expectedType: "SHELTER", shelterId: { not: null } } : { expectedType: "SHELTER", shelterId: { not: null } }
+    });
+    const arrivalsMap = {};
+    for (const loc of expectedLocations) {
+      if (loc.shelterId) {
+        arrivalsMap[loc.shelterId] = (arrivalsMap[loc.shelterId] || 0) + 1;
+      }
+    }
+    const sheltersWithOccupancy = shelters.map((s) => {
+      const expectedArrivals = arrivalsMap[s.id] || 0;
+      const remainingCapacity = s.capacity - expectedArrivals;
+      let calculatedStatus = s.status;
+      if (remainingCapacity < 0) {
+        calculatedStatus = "OVER_CAPACITY";
+      } else if (remainingCapacity === 0) {
+        calculatedStatus = "FULL";
+      } else if (remainingCapacity <= Math.max(2, s.capacity * 0.2)) {
+        calculatedStatus = "NEAR_CAPACITY";
+      } else {
+        calculatedStatus = "AVAILABLE";
+      }
+      return {
+        ...s,
+        expectedArrivals,
+        remainingCapacity,
+        occupancyPercentage: Math.min(100, Math.round(expectedArrivals / s.capacity * 100)),
+        status: calculatedStatus
+      };
+    });
     const facilities = await database_default.emergencyFacility.findMany();
     const roads = await database_default.road.findMany();
     let zones = [];
@@ -2161,7 +2238,7 @@ async function getRescuerMapData(req, res) {
       const nearbyFacilities = facilities.filter(
         (f) => calculateHaversineDistance(h.latitude, h.longitude, f.latitude, f.longitude) <= DEFAULT_MAP_RADIUS_KM
       );
-      const nearbyShelters = shelters.filter(
+      const nearbyShelters = sheltersWithOccupancy.filter(
         (s) => calculateHaversineDistance(h.latitude, h.longitude, s.latitude, s.longitude) <= DEFAULT_MAP_RADIUS_KM
       );
       let safeCount = 0;
@@ -2197,7 +2274,7 @@ async function getRescuerMapData(req, res) {
     });
     res.json({
       households: housesWithNearbyFacilities,
-      shelters,
+      shelters: sheltersWithOccupancy,
       facilities,
       roads,
       zones,

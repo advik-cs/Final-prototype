@@ -105,17 +105,6 @@ export default function App() {
     setCurrentUser(null);
   };
 
-  // Quick switch role between Citizen, Authority, and Rescuer
-  const handleSwitchRole = async (targetRole: 'CITIZEN' | 'AUTHORITY' | 'RESCUER') => {
-    try {
-      if (currentUser?.role === targetRole) return;
-      const user = await authApi.loginDemo(targetRole);
-      setCurrentUser(user);
-    } catch (e) {
-      console.error('Failed to switch demo role:', e);
-    }
-  };
-
   // Switch mode and update browser URL path
   const handleSwitchMode = (newMode: DisasterMode) => {
     setMode(newMode);
@@ -148,7 +137,6 @@ export default function App() {
       onSelectBeforeTab={(t) => setBeforeTab(t)}
       activeDuringTab={duringTab}
       onSelectDuringTab={(t) => setDuringTab(t)}
-      onSwitchRole={handleSwitchRole}
       activeDisaster={activeDisaster}
       onSelectDisaster={(d) => setActiveDisaster(d)}
       disasters={disasters}

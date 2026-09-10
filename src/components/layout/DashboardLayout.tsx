@@ -19,7 +19,6 @@ import {
   ShieldCheck,
   UserCheck,
   ChevronRight,
-  Sparkles,
   Waves,
 } from 'lucide-react';
 
@@ -50,7 +49,7 @@ interface DashboardLayoutProps {
   onSelectBeforeTab: (tab: BeforeTab) => void;
   activeDuringTab: DuringTab;
   onSelectDuringTab: (tab: DuringTab) => void;
-  onSwitchRole: (newRole: 'CITIZEN' | 'AUTHORITY' | 'RESCUER') => void;
+  onSwitchRole?: (newRole: 'CITIZEN' | 'AUTHORITY' | 'RESCUER') => void;
   activeDisaster: DisasterEvent | null;
   onSelectDisaster: (disaster: DisasterEvent) => void;
   disasters: DisasterEvent[];
@@ -310,57 +309,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           )}
         </nav>
 
-        {/* Role Switcher & Persona helper for hackathon judges */}
-        <div className="p-3 mx-3 mb-3 rounded-2xl bg-[#F5EFEB]/90 border border-[#C8D9E6]/60">
-          <div className="flex items-center justify-between text-[11px] font-bold text-[#2F4156] mb-2">
-            <span className="flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-[#567C8D]" />
-              Role Simulator
-            </span>
-            <span className="text-[10px] uppercase text-[#567C8D] font-bold">
-              {user.role}
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-1 text-[10px] font-semibold">
-            <button
-              id="btn-role-citizen"
-              type="button"
-              onClick={() => onSwitchRole('CITIZEN')}
-              className={`py-1 px-1.5 rounded-lg transition text-center cursor-pointer ${
-                user.role === 'CITIZEN'
-                  ? 'bg-white text-[#2F4156] shadow-sm font-bold'
-                  : 'text-[#567C8D] hover:bg-white/50'
-              }`}
-            >
-              Citizen
-            </button>
-            <button
-              id="btn-role-authority"
-              type="button"
-              onClick={() => onSwitchRole('AUTHORITY')}
-              className={`py-1 px-1.5 rounded-lg transition text-center cursor-pointer ${
-                user.role === 'AUTHORITY'
-                  ? 'bg-[#2F4156] text-white shadow-sm font-bold'
-                  : 'text-[#567C8D] hover:bg-white/50'
-              }`}
-            >
-              Authority
-            </button>
-            <button
-              id="btn-role-rescuer"
-              type="button"
-              onClick={() => onSwitchRole('RESCUER')}
-              className={`py-1 px-1.5 rounded-lg transition text-center cursor-pointer ${
-                user.role === 'RESCUER'
-                  ? 'bg-[#DC2626] text-white shadow-sm font-bold'
-                  : 'text-[#567C8D] hover:bg-white/50'
-              }`}
-            >
-              Rescuer
-            </button>
-          </div>
-        </div>
-
         {/* User profile footer */}
         <div className="p-4 border-t border-[#F5EFEB] flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -368,7 +316,20 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {user.name.charAt(0)}
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-bold text-[#2F4156] truncate">{user.name}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-bold text-[#2F4156] truncate">{user.name}</p>
+                <span
+                  className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded tracking-wider ${
+                    user.role === 'AUTHORITY'
+                      ? 'bg-[#2F4156] text-white'
+                      : user.role === 'RESCUER'
+                      ? 'bg-[#DC2626] text-white'
+                      : 'bg-[#567C8D]/15 text-[#2F4156]'
+                  }`}
+                >
+                  {user.role}
+                </span>
+              </div>
               <p className="text-[10px] text-[#567C8D] truncate">
                 {user.role === 'CITIZEN' ? `Aadhaar: ${user.testIdentityNumber}` : `ID: ${user.testIdentityNumber}`}
               </p>

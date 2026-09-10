@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { disasterService, DisasterEvent, AffectedZone } from '../../services/disasterService.ts';
 import { User } from '../../services/authService.ts';
 import {
@@ -31,6 +31,27 @@ export const PredictedThreatsView: React.FC<PredictedThreatsViewProps> = ({
 }) => {
   const [zones, setZones] = useState<AffectedZone[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Sorting: RED > ORANGE > YELLOW > GREEN, then earliest date/time first
+  const sortedDisasters = useMemo(() => {
+    const SEVERITY_ORDER: Record<string, number> = {
+      RED: 1,
+      ORANGE: 2,
+      YELLOW: 3,
+      GREEN: 4,
+    };
+
+    return [...disasters].sort((a, b) => {
+      const sevA = SEVERITY_ORDER[String(a.alertLevel).toUpperCase()] ?? 99;
+      const sevB = SEVERITY_ORDER[String(b.alertLevel).toUpperCase()] ?? 99;
+      if (sevA !== sevB) {
+        return sevA - sevB; // RED before ORANGE
+      }
+      const timeA = new Date(a.predictedStartTime || 0).getTime();
+      const timeB = new Date(b.predictedStartTime || 0).getTime();
+      return timeA - timeB; // Earliest onset date/time first
+    });
+  }, [disasters]);
 
   // New Threat Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -144,7 +165,7 @@ export const PredictedThreatsView: React.FC<PredictedThreatsViewProps> = ({
 
       {/* Threat Cards List */}
       <div className="space-y-6">
-        {disasters.map((d) => {
+        {sortedDisasters.map((d) => {
           const isSelected = d.id === activeDisaster?.id;
 
           return (
