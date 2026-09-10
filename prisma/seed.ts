@@ -1,12 +1,16 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'file:./dev.db';
+}
+
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding STRIDE database with demo fictional data...');
+  console.log('Seeding STRIDE database with canonical Bengaluru source-of-truth data...');
 
-  // Clean existing data in reverse order of dependencies
+  // Clean existing data in reverse order of foreign key dependencies
   await prisma.rescueAssignment.deleteMany();
   await prisma.emergencyCondition.deleteMany();
   await prisma.emergencyRequest.deleteMany();
@@ -40,161 +44,277 @@ async function main() {
     await prisma.priorityConfiguration.create({ data: w });
   }
 
-  // 2. Users (1 Rescuer + 10+ Citizens)
-  const defaultPassword = await bcrypt.hash('stride123', 10);
+  // 2. Users (Rescuers/Authority + Citizens)
+  const passwordHash = await bcrypt.hash('StrongPassword123!', 10);
 
-  const rescuer = await prisma.user.create({
+  // Authority / Rescuer
+  const rescuerCommander = await prisma.user.create({
     data: {
-      name: 'Capt. Vikram Rathore',
-      testIdentityNumber: 'RES-88210',
-      mobileNumber: '9880011223',
-      password: defaultPassword,
+      name: 'Commander Vikram Rao',
+      testIdentityNumber: 'AUTH-COMMAND-01',
+      mobileNumber: '9800000001',
+      password: passwordHash,
       role: 'RESCUER',
     },
   });
 
-  const citizensData = [
-    { name: 'Arun Kumar', idNum: 'CIT-10001', phone: '9840112345' },
-    { name: 'Meera Nambiar', idNum: 'CIT-10002', phone: '9840112346' },
-    { name: 'Rajesh Patel', idNum: 'CIT-10003', phone: '9840112347' },
-    { name: 'Sunita Rao', idNum: 'CIT-10004', phone: '9840112348' },
-    { name: 'David Fernandez', idNum: 'CIT-10005', phone: '9840112349' },
-    { name: 'Ananya Sen', idNum: 'CIT-10006', phone: '9840112350' },
-    { name: 'Karthik Iyer', idNum: 'CIT-10007', phone: '9840112351' },
-    { name: 'Fatima Sheikh', idNum: 'CIT-10008', phone: '9840112352' },
-    { name: 'Gurpreet Singh', idNum: 'CIT-10009', phone: '9840112353' },
-    { name: 'Deepa Verma', idNum: 'CIT-10010', phone: '9840112354' },
-    { name: 'Rohan Deshmukh', idNum: 'CIT-10011', phone: '9840112355' },
+  const rescuerCapt = await prisma.user.create({
+    data: {
+      name: 'Capt. Vikram Rathore',
+      testIdentityNumber: 'RES-NDRF-88210',
+      mobileNumber: '9880011223',
+      password: passwordHash,
+      role: 'RESCUER',
+    },
+  });
+
+  // Citizens for the 16 buildings
+  const citizenConfigs = [
+    { name: 'Citizen Priya Sharma', phone: '9800000011', idNum: '5432 8901 2345' },
+    { name: 'Citizen Rajesh Kumar', phone: '9800000012', idNum: 'TEST-CIT-SEED-002' },
+    { name: 'Citizen Meera Iyer', phone: '9800000013', idNum: 'TEST-CIT-SEED-003' },
+    { name: 'Citizen Indira Naidu', phone: '9800000014', idNum: 'TEST-CIT-SEED-004' },
+    { name: 'Citizen Arjun Verma', phone: '9800000015', idNum: 'TEST-CIT-SEED-005' },
+    { name: 'Citizen Suresh Reddy', phone: '9800000016', idNum: 'TEST-CIT-SEED-006' },
+    { name: 'Ramesh Sharma', phone: '9815130996', idNum: 'TEST-CIT-SEED-007' },
+    { name: 'Aditi Rao', phone: '9850829994', idNum: 'TEST-CIT-SEED-008' },
+    { name: 'Nikhil Kumar', phone: '9816898711', idNum: 'TEST-CIT-SEED-009' },
+    { name: 'Vikas Swaminathan', phone: '9843486832', idNum: 'TEST-CIT-SEED-010' },
+    { name: 'Citizen Vikram', phone: '9777773625', idNum: 'TEST-CIT-SEED-011' },
+    { name: 'Citizen Ananya', phone: '9666673625', idNum: 'TEST-CIT-SEED-012' },
+    { name: 'Citizen Rahul', phone: '9755532811', idNum: 'TEST-CIT-SEED-013' },
+    { name: 'Aarav Patel', phone: '9876543210', idNum: 'TEST-CIT-SEED-014' },
+    { name: 'Ramesh Sharma', phone: '9854222318', idNum: 'TEST-CIT-SEED-015' },
+    { name: 'Sneha Roy', phone: '9825528197', idNum: 'TEST-CIT-SEED-016' },
   ];
 
-  const citizenUsers = [];
-  for (const c of citizensData) {
-    const user = await prisma.user.create({
+  const citizenUserMap = new Map();
+  for (const c of citizenConfigs) {
+    const u = await prisma.user.create({
       data: {
         name: c.name,
-        testIdentityNumber: c.idNum,
         mobileNumber: c.phone,
-        password: defaultPassword,
+        testIdentityNumber: c.idNum,
+        password: passwordHash,
         role: 'CITIZEN',
       },
     });
-    citizenUsers.push(user);
+    citizenUserMap.set(c.phone, u);
   }
 
-  // 3. Shelters (3+ shelters demonstrating: AVAILABLE, NEAR_CAPACITY, OVER_CAPACITY)
-  const shelterNorth = await prisma.shelter.create({
-    data: {
-      name: 'North Heights Community Center',
-      address: '102 Hilltop Boulevard, Sector 1',
-      latitude: 13.098,
-      longitude: 80.265,
+  // 3. Shelters (Exactly 14 canonical shelters across Bengaluru)
+  const sheltersData = [
+    {
+      id: '00000000-0000-0000-0000-000000000101',
+      name: 'Koramangala Indoor Stadium (Demo Shelter)',
+      address: '80 Feet Road, Koramangala 4th Block, Bengaluru',
+      latitude: 12.9340,
+      longitude: 77.6220,
+      capacity: 1000,
+      contactNumber: '080-25531122',
+      status: 'AVAILABLE',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000102',
+      name: 'Our Lady of Vailankanni Hall (Demo Unit A)',
+      address: 'Yelahanka New Town, Bengaluru',
+      latitude: 13.1010,
+      longitude: 77.5970,
+      capacity: 46,
+      contactNumber: '080-28562211',
+      status: 'NEAR_CAPACITY',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000103',
+      name: 'Mangaldhama Multi Utility Hall (Demo)',
+      address: '12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru',
+      latitude: 12.9710,
+      longitude: 77.6430,
+      capacity: 41,
+      contactNumber: '080-25284455',
+      status: 'OVER_CAPACITY',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000104',
+      name: 'M. Chinnaswamy Stadium (Demo Shelter)',
+      address: 'MG Road, Cubbon Park, Bengaluru',
+      latitude: 12.9788,
+      longitude: 77.5996,
+      capacity: 2000,
+      contactNumber: '080-22861234',
+      status: 'AVAILABLE',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000105',
+      name: 'Sree Kanteerava Stadium (Demo Shelter)',
+      address: 'Kasturba Road, Sampangi Rama Nagar, Bengaluru',
+      latitude: 12.9698,
+      longitude: 77.5926,
+      capacity: 1500,
+      contactNumber: '080-22214455',
+      status: 'AVAILABLE',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000106',
+      name: 'Nadaprabhu Kempegowda Stadium (Demo)',
+      address: 'Magadi Main Road, Vijayanagar, Bengaluru',
+      latitude: 12.9830,
+      longitude: 77.5250,
+      capacity: 900,
+      contactNumber: '080-23301122',
+      status: 'AVAILABLE',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000107',
+      name: 'Atal Bihari Vajpayee Stadium (Demo)',
+      address: '27th Main Road, HSR Layout Sector 1, Bengaluru',
+      latitude: 12.9125,
+      longitude: 77.6380,
+      capacity: 800,
+      contactNumber: '080-25723344',
+      status: 'AVAILABLE',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000108',
+      name: 'Dr. B. R. Ambedkar Stadium (Demo)',
+      address: 'Old Airport Road, Domlur, Bengaluru',
+      latitude: 12.9770,
+      longitude: 77.6240,
+      capacity: 750,
+      contactNumber: '080-25356677',
+      status: 'AVAILABLE',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000109',
+      name: 'Sahakara Nagar Indoor Stadium (Demo)',
+      address: '60 Feet Road, Sahakara Nagar, Bengaluru',
+      latitude: 13.0620,
+      longitude: 77.5890,
+      capacity: 62,
+      contactNumber: '080-23621144',
+      status: 'AVAILABLE',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000110',
+      name: 'Verdant Convention Hall (Demo Shelter)',
+      address: 'Neeladri Road, Electronic City Phase 1, Bengaluru',
+      latitude: 12.8450,
+      longitude: 77.6620,
+      capacity: 56,
+      contactNumber: '080-28521155',
+      status: 'AVAILABLE',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000111',
+      name: 'Kempapura Indoor Stadium (Demo Shelter)',
+      address: 'Coffee Board Layout, Kempapura, Hebbal, Bengaluru',
+      latitude: 13.0480,
+      longitude: 77.5980,
+      capacity: 51,
+      contactNumber: '080-23631188',
+      status: 'AVAILABLE',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000112',
+      name: 'ECC Centre Community Hall (Demo Shelter)',
+      address: 'Whitefield Main Road, Inner Circle, Bengaluru',
+      latitude: 12.9690,
+      longitude: 77.7490,
+      capacity: 47,
+      contactNumber: '080-28452233',
+      status: 'AVAILABLE',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000113',
+      name: "St. John's Community Centre (Demo)",
+      address: 'Benson Cross Road, Benson Town, Bengaluru',
+      latitude: 12.9980,
+      longitude: 77.6140,
+      capacity: 42,
+      contactNumber: '080-23547788',
+      status: 'AVAILABLE',
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000114',
+      name: 'Ideal Homes Community Hall (Demo)',
+      address: 'Rajarajeshwari Nagar, Bengaluru',
+      latitude: 12.9260,
+      longitude: 77.5180,
       capacity: 40,
-      contactNumber: '+91 44 2498 1001',
-      status: 'ACTIVE',
+      contactNumber: '080-28603344',
+      status: 'AVAILABLE',
     },
-  });
+  ];
 
-  const shelterCenter = await prisma.shelter.create({
-    data: {
-      name: 'City Central Indoor Sports Arena',
-      address: '14 Stadium Road, Civil Lines',
-      latitude: 13.085,
-      longitude: 80.282,
-      capacity: 10,
-      contactNumber: '+91 44 2498 1002',
-      status: 'ACTIVE',
-    },
-  });
+  for (const s of sheltersData) {
+    await prisma.shelter.create({ data: s });
+  }
 
-  const shelterEast = await prisma.shelter.create({
-    data: {
-      name: 'East Pier Municipal High School',
-      address: '88 Lighthouse Street, Ward 9',
-      latitude: 13.076,
-      longitude: 80.289,
-      capacity: 6,
-      contactNumber: '+91 44 2498 1003',
-      status: 'ACTIVE',
-    },
-  });
-
-  const shelterWest = await prisma.shelter.create({
-    data: {
-      name: 'Westside College Auditorium',
-      address: '45 Knowledge Park, Campus Gate 2',
-      latitude: 13.07,
-      longitude: 80.252,
-      capacity: 50,
-      contactNumber: '+91 44 2498 1004',
-      status: 'ACTIVE',
-    },
-  });
-
-  // 4. Emergency Facilities (2 Hospitals, 2 Fire Stations, 2 Police Stations, 2 Checkpoints)
+  // 4. Emergency Facilities (Exactly 8 Canonical Facilities in Bengaluru)
   const facilitiesData = [
     {
-      name: 'Apollo Lifeline Emergency Hospital',
+      name: "St. John's Emergency Hospital",
       type: 'HOSPITAL',
-      address: '21 Health City Avenue, Ward 4',
-      latitude: 13.084,
-      longitude: 80.274,
-      contactNumber: '+91 44 2829 0200',
+      address: 'Sarjapur Road, John Nagar, Koramangala, Bengaluru',
+      latitude: 12.9304,
+      longitude: 77.6200,
+      contactNumber: '080-22065000',
     },
     {
-      name: 'Metro General Trauma & Acute Care',
+      name: 'Manipal Hospital',
       type: 'HOSPITAL',
-      address: '500 Central Hospital Road',
-      latitude: 13.079,
-      longitude: 80.267,
-      contactNumber: '+91 44 2829 0300',
+      address: '98 HAL Old Airport Road, Kodihalli, Bengaluru',
+      latitude: 12.9585,
+      longitude: 77.6492,
+      contactNumber: '080-25024444',
     },
     {
-      name: 'Central Fire & Disaster Rescue Station #4',
+      name: 'Koramangala Fire Brigade',
       type: 'FIRE_STATION',
-      address: '9 Engine House Road, Sector 3',
-      latitude: 13.089,
-      longitude: 80.266,
-      contactNumber: '+91 44 2844 0101',
+      address: '80 Feet Road, 6th Block, Koramangala, Bengaluru',
+      latitude: 12.9370,
+      longitude: 77.6260,
+      contactNumber: '101',
     },
     {
-      name: 'Harbor Waterfront Quick Response Fire Unit',
+      name: 'Yelahanka Fire Substation',
       type: 'FIRE_STATION',
-      address: '3 Marine Drive, Port Gate 1',
-      latitude: 13.073,
-      longitude: 80.276,
-      contactNumber: '+91 44 2844 0102',
+      address: 'Major Sandeep Unnikrishnan Road, Yelahanka, Bengaluru',
+      latitude: 13.0980,
+      longitude: 77.5940,
+      contactNumber: '101',
     },
     {
-      name: 'Coastal Police Precinct 12',
+      name: 'Madiwala Police Station',
       type: 'POLICE_STATION',
-      address: '12 Beach Road, Zone A',
-      latitude: 13.085,
-      longitude: 80.261,
-      contactNumber: '+91 44 2345 2001',
+      address: 'Hosur Road, Madiwala, Bengaluru',
+      latitude: 12.9220,
+      longitude: 77.6180,
+      contactNumber: '100',
     },
     {
-      name: 'Metro Central Police Headquarters',
+      name: 'Indiranagar Police Station',
       type: 'POLICE_STATION',
-      address: '1 Civic Square, Old Town',
-      latitude: 13.077,
-      longitude: 80.28,
-      contactNumber: '+91 44 2345 2002',
+      address: 'CMH Road, Indiranagar, Bengaluru',
+      latitude: 12.9790,
+      longitude: 77.6415,
+      contactNumber: '100',
     },
     {
-      name: 'North River Bridge Disaster Checkpoint',
+      name: 'Silk Board Evacuation Checkpoint',
       type: 'CHECKPOINT',
-      address: 'River Causeway North Ingress',
-      latitude: 13.092,
-      longitude: 80.271,
-      contactNumber: '+91 44 2345 3001',
+      address: 'Central Silk Board Junction, Hosur Road, Bengaluru',
+      latitude: 12.9175,
+      longitude: 77.6235,
+      contactNumber: '112',
     },
     {
-      name: 'South Ring Bypass Perimeter Checkpoint',
+      name: 'Hebbal Flyover Checkpoint',
       type: 'CHECKPOINT',
-      address: 'NH-45 Interchange Outpost',
-      latitude: 13.067,
-      longitude: 80.264,
-      contactNumber: '+91 44 2345 3002',
+      address: 'Hebbal Outer Ring Road Junction, Bengaluru',
+      latitude: 13.0360,
+      longitude: 77.5975,
+      contactNumber: '112',
     },
   ];
 
@@ -202,43 +322,43 @@ async function main() {
     await prisma.emergencyFacility.create({ data: f });
   }
 
-  // 5. Demo Roads
+  // 5. Roads (Canonical Bengaluru transit routes)
   const roadsData = [
     {
-      name: 'Eastern Coastal Arterial Highway',
+      name: 'Hosur Road Evacuation Corridor',
       status: 'OPEN',
       coordinatesJson: JSON.stringify([
-        [13.065, 80.285],
-        [13.075, 80.284],
-        [13.085, 80.281],
-        [13.095, 80.279],
+        [12.9175, 77.6235],
+        [12.9250, 77.6200],
+        [12.9340, 77.6150],
+        [12.9500, 77.6050],
       ]),
     },
     {
-      name: 'River Basin Causeway Route',
+      name: 'Koramangala 80 Feet Road Route',
       status: 'FLOODED',
       coordinatesJson: JSON.stringify([
-        [13.074, 80.262],
-        [13.08, 80.268],
-        [13.084, 80.273],
+        [12.9300, 77.6220],
+        [12.9350, 77.6240],
+        [12.9400, 77.6260],
       ]),
     },
     {
-      name: 'Old Canal Bypass Road',
-      status: 'BLOCKED',
-      coordinatesJson: JSON.stringify([
-        [13.071, 80.27],
-        [13.077, 80.273],
-        [13.082, 80.276],
-      ]),
-    },
-    {
-      name: 'North-West Relief Transit Corridor',
+      name: 'Outer Ring Road Silk Board - Bellandur Transit',
       status: 'RESTRICTED',
       coordinatesJson: JSON.stringify([
-        [13.09, 80.258],
-        [13.093, 80.265],
-        [13.098, 80.27],
+        [12.9175, 77.6235],
+        [12.9260, 77.6400],
+        [12.9350, 77.6700],
+      ]),
+    },
+    {
+      name: 'Old Airport Road Relief Transit Corridor',
+      status: 'OPEN',
+      coordinatesJson: JSON.stringify([
+        [12.9585, 77.6492],
+        [12.9650, 77.6350],
+        [12.9720, 77.6150],
       ]),
     },
   ];
@@ -247,507 +367,588 @@ async function main() {
     await prisma.road.create({ data: r });
   }
 
-  // 6. Disaster Event (1 Flood Disaster)
+  // 6. Disaster Events
   const now = new Date();
-  const startTime = new Date(now.getTime() + 18 * 60 * 60 * 1000); // 18 hours ahead (within 30h reconfirmation window!)
-  const endTime = new Date(now.getTime() + 72 * 60 * 60 * 1000);
 
-  const floodDisaster = await prisma.disasterEvent.create({
+  // Secondary predicted disaster (older createdAt)
+  await prisma.disasterEvent.create({
     data: {
+      id: 'bd8b980a-028e-4057-af29-a70e76b13ed2',
       type: 'FLOOD',
-      title: 'Monsoon Flash Flood Warning - River Basin Zone',
-      description:
-        'Continuous torrential rainfall exceeding 220mm forecast along River Basin. Rapid water level rise imminent in low-lying wards.',
+      title: 'Bengaluru Urban Flash Floods — Central & Northern Basins',
+      description: 'Elevated flood advisory and storm surges along Bellandur and Hebbal corridors.',
       alertLevel: 'RED',
-      predictedStartTime: startTime,
-      predictedEndTime: endTime,
-      status: 'ACTIVE', // Active to enable both BEFORE & DURING features in demo
-      createdById: rescuer.id,
+      predictedStartTime: new Date(now.getTime() + 12 * 3600 * 1000),
+      predictedEndTime: new Date(now.getTime() + 72 * 3600 * 1000),
+      status: 'PREDICTED',
+      createdById: rescuerCommander.id,
+      createdAt: new Date(now.getTime() - 60000),
     },
   });
 
-  // 7. Affected Zone with polygon covering the low-lying basin
-  const polygonCoords = [
-    [13.072, 80.262],
-    [13.092, 80.264],
-    [13.095, 80.282],
-    [13.078, 80.286],
-    [13.07, 80.274],
-  ];
-
-  const affectedZone = await prisma.affectedZone.create({
+  // Primary active Bengaluru flood disaster (newest createdAt so it is list[0])
+  const primaryDisaster = await prisma.disasterEvent.create({
     data: {
-      disasterId: floodDisaster.id,
-      name: 'Basin Delta Inundation Sector A',
-      riskLevel: 'HIGH',
-      polygonGeoJson: JSON.stringify(polygonCoords),
-      radiusKm: 4.5,
+      id: '00000000-0000-0000-0000-000000000601',
+      type: 'FLOOD',
+      title: 'Monsoon Flash Flood Warning — South Bengaluru Urban',
+      description: 'Severe monsoon downpour inducing high-velocity surface runoff, lake breaches, and storm conduit overflow across Bengaluru.',
+      alertLevel: 'ORANGE',
+      predictedStartTime: new Date(now.getTime() - 2 * 3600 * 1000),
+      predictedEndTime: new Date(now.getTime() + 48 * 3600 * 1000),
+      status: 'ACTIVE',
+      createdById: rescuerCommander.id,
+      createdAt: now,
     },
   });
 
-  // 8. Households & Members (Diverse compositions: Adults, Children, Elderly)
-  // Some inside affected zone, some outside
-  const householdsData = [
+  // 7. Affected Zones (Exactly 9 Canonical Zones across Bengaluru)
+  const zonesData = [
     {
-      user: citizenUsers[0],
-      name: 'Building A-182, Flat 401',
-      address: '182 Riverside Drive, Low Basin Ward',
-      city: 'Coastal Metro',
-      lat: 13.0827,
-      lng: 80.2707, // Inside affected polygon
-      members: [
-        { name: 'Arun Kumar', age: 38, rel: 'Self', cat: 'ADULT' },
-        { name: 'Priya Kumar', age: 36, rel: 'Spouse', cat: 'ADULT' },
-        { name: 'Aarav Kumar', age: 8, rel: 'Child', cat: 'CHILD' },
-        { name: 'Kavita Kumar', age: 71, rel: 'Parent', cat: 'ELDERLY' },
-      ],
+      name: 'Zone A - High Risk Drainage Basin (Koramangala & HSR)',
+      riskLevel: 'RED',
+      polygonGeoJson: JSON.stringify([
+        [12.9450, 77.6100],
+        [12.9450, 77.6600],
+        [12.9000, 77.6600],
+        [12.9000, 77.6100],
+        [12.9450, 77.6100],
+      ]),
+      radiusKm: 5.0,
     },
     {
-      user: citizenUsers[1],
-      name: 'Building A-182, Flat 202',
-      address: '182 Riverside Drive, Low Basin Ward',
-      city: 'Coastal Metro',
-      lat: 13.0827,
-      lng: 80.2707, // Inside affected polygon (same building to test building aggregations!)
-      members: [
-        { name: 'Meera Nambiar', age: 29, rel: 'Self', cat: 'ADULT' },
-        { name: 'Sanjay Nambiar', age: 31, rel: 'Spouse', cat: 'ADULT' },
-        { name: 'Tara Nambiar', age: 3, rel: 'Child', cat: 'CHILD' },
-      ],
+      name: 'Zone B - Moderate Risk Overflow Perimeter',
+      riskLevel: 'ORANGE',
+      polygonGeoJson: JSON.stringify([
+        [12.9400, 77.6200],
+        [12.9400, 77.6700],
+        [12.8950, 77.6700],
+        [12.8950, 77.6200],
+        [12.9400, 77.6200],
+      ]),
+      radiusKm: 5.0,
     },
     {
-      user: citizenUsers[2],
-      name: 'Riverside Enclave, Block C-12',
-      address: '88 Canal Promenade, Ward 4',
-      city: 'Coastal Metro',
-      lat: 13.0845,
-      lng: 80.2735, // Inside affected polygon
-      members: [
-        { name: 'Rajesh Patel', age: 45, rel: 'Self', cat: 'ADULT' },
-        { name: 'Geeta Patel', age: 43, rel: 'Spouse', cat: 'ADULT' },
-        { name: 'Ramesh Patel', age: 74, rel: 'Parent', cat: 'ELDERLY' },
-        { name: 'Lata Patel', age: 70, rel: 'Parent', cat: 'ELDERLY' },
-      ],
+      name: 'Central Zone A (High Risk Red Zone)',
+      riskLevel: 'RED',
+      polygonGeoJson: JSON.stringify([
+        [12.9650, 77.6000],
+        [12.9650, 77.6180],
+        [12.9800, 77.6180],
+        [12.9800, 77.6000],
+        [12.9650, 77.6000],
+      ]),
+      radiusKm: 5.0,
     },
     {
-      user: citizenUsers[3],
-      name: 'Greenwood Apartments, Flat 104',
-      address: '24 South Ridge Road, Ward 7',
-      city: 'Coastal Metro',
-      lat: 13.076,
-      lng: 80.269, // Inside affected polygon
-      members: [
-        { name: 'Sunita Rao', age: 34, rel: 'Self', cat: 'ADULT' },
-        { name: 'Aditi Rao', age: 6, rel: 'Child', cat: 'CHILD' },
-      ],
+      name: 'Zone B - North Bengaluru Stormwater Basin (Hebbal-Hennur-Thanisandra)',
+      riskLevel: 'ORANGE',
+      polygonGeoJson: JSON.stringify([
+        [13.0350, 77.5800],
+        [13.0350, 77.6550],
+        [13.0850, 77.6550],
+        [13.0850, 77.5800],
+        [13.0350, 77.5800],
+      ]),
+      radiusKm: 5.0,
     },
     {
-      user: citizenUsers[4],
-      name: 'Highland Towers, Apt 8B',
-      address: '99 North Hilltop Highway, Sector 1',
-      city: 'Coastal Metro',
-      lat: 13.11,
-      lng: 80.292, // Outside polygon (SAFE / UNAFFECTED)
-      members: [
-        { name: 'David Fernandez', age: 41, rel: 'Self', cat: 'ADULT' },
-        { name: 'Maria Fernandez', age: 39, rel: 'Spouse', cat: 'ADULT' },
-        { name: 'Lucas Fernandez', age: 12, rel: 'Child', cat: 'CHILD' },
-      ],
+      name: 'Kasavanahalli Lake Backflow Ring',
+      riskLevel: 'ORANGE',
+      polygonGeoJson: JSON.stringify([
+        [12.8900, 77.6600],
+        [12.8900, 77.7000],
+        [12.9200, 77.7000],
+        [12.9200, 77.6600],
+        [12.8900, 77.6600],
+      ]),
+      radiusKm: 5.0,
     },
     {
-      user: citizenUsers[5],
-      name: 'Palm Grove Residency, Villa 7',
-      address: '15 West Orchard Lane, Greenfield',
-      city: 'Coastal Metro',
-      lat: 13.055,
-      lng: 80.245, // Outside polygon (SAFE / UNAFFECTED)
-      members: [
-        { name: 'Ananya Sen', age: 28, rel: 'Self', cat: 'ADULT' },
-        { name: 'Debashis Sen', age: 67, rel: 'Parent', cat: 'ELDERLY' },
-      ],
+      name: 'Vrishabhavathi Breach Corridor',
+      riskLevel: 'RED',
+      polygonGeoJson: JSON.stringify([
+        [12.9200, 77.5200],
+        [12.9200, 77.5450],
+        [12.9500, 77.5450],
+        [12.9500, 77.5200],
+        [12.9200, 77.5200],
+      ]),
+      radiusKm: 5.0,
+    },
+    {
+      name: 'Bellandur-Varthur Spillway Zone',
+      riskLevel: 'RED',
+      polygonGeoJson: JSON.stringify([
+        [12.9300, 77.6700],
+        [12.9300, 77.7400],
+        [12.9600, 77.7400],
+        [12.9600, 77.6700],
+        [12.9300, 77.6700],
+      ]),
+      radiusKm: 5.0,
+    },
+    {
+      name: 'Nagavara-Hennur Overflow Basin',
+      riskLevel: 'ORANGE',
+      polygonGeoJson: JSON.stringify([
+        [13.0300, 77.6100],
+        [13.0300, 77.6600],
+        [13.0700, 77.6600],
+        [13.0700, 77.6100],
+        [13.0300, 77.6100],
+      ]),
+      radiusKm: 5.0,
+    },
+    {
+      name: 'Pinakini Riverbank Flood Perimeter',
+      riskLevel: 'ORANGE',
+      polygonGeoJson: JSON.stringify([
+        [13.0000, 77.7200],
+        [13.0000, 77.7700],
+        [13.0500, 77.7700],
+        [13.0500, 77.7200],
+        [13.0000, 77.7200],
+      ]),
+      radiusKm: 5.0,
     },
   ];
 
-  const createdMembers = [];
-
-  for (const hData of householdsData) {
-    const household = await prisma.household.create({
+  for (const z of zonesData) {
+    await prisma.affectedZone.create({
       data: {
-        userId: hData.user.id,
-        name: hData.name,
-        address: hData.address,
-        city: hData.city,
-        state: 'Tamil Nadu',
-        latitude: hData.lat,
-        longitude: hData.lng,
-        members: {
-          create: hData.members.map((m) => ({
+        disasterId: primaryDisaster.id,
+        name: z.name,
+        riskLevel: z.riskLevel,
+        polygonGeoJson: z.polygonGeoJson,
+        radiusKm: z.radiusKm,
+      },
+    });
+  }
+
+  // 8. Households & Members (Exactly 16 Canonical Residential Buildings in Bengaluru)
+  const buildingsConfig = [
+    {
+      phone: '9800000011',
+      name: 'Palm Meadows Villa 101',
+      address: '80 Feet Road, Koramangala 4th Block',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.9352,
+      lng: 77.6245,
+      adults: 3,
+      children: 2,
+      elderly: 1,
+    },
+    {
+      phone: '9800000012',
+      name: 'Salarpuria Sattva Greenage',
+      address: 'Hosur Main Road, Bommanahalli',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.9690,
+      lng: 77.6110,
+      adults: 36,
+      children: 12,
+      elderly: 8,
+    },
+    {
+      phone: '9800000013',
+      name: 'Prestige Shantiniketan',
+      address: 'ITPL Main Road, Whitefield',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.9750,
+      lng: 77.6140,
+      adults: 37,
+      children: 13,
+      elderly: 7,
+    },
+    {
+      phone: '9800000014',
+      name: 'Mantri Webcity',
+      address: 'Hennur Main Road, Narayanapura',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 13.0550,
+      lng: 77.6450,
+      adults: 35,
+      children: 12,
+      elderly: 7,
+    },
+    {
+      phone: '9800000015',
+      name: 'Sobha Dream Acres',
+      address: 'Panathur Main Road, Balagere',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.9380,
+      lng: 77.7120,
+      adults: 36,
+      children: 12,
+      elderly: 7,
+    },
+    {
+      phone: '9800000016',
+      name: 'Purva Skywood',
+      address: 'Haralur Road, Off Sarjapur Road',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.9050,
+      lng: 77.6650,
+      adults: 33,
+      children: 11,
+      elderly: 6,
+    },
+    {
+      phone: '9815130996',
+      name: 'Brigade Gateway Apartments',
+      address: '26/1 Dr. Rajkumar Road, Malleshwaram-Rajajinagar',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.9725,
+      lng: 77.6065,
+      adults: 38,
+      children: 13,
+      elderly: 7,
+    },
+    {
+      phone: '9850829994',
+      name: 'RMZ Latitude',
+      address: 'Hebbal Kempapura, Bellary Road',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 13.0420,
+      lng: 77.5890,
+      adults: 34,
+      children: 12,
+      elderly: 6,
+    },
+    {
+      phone: '9816898711',
+      name: 'Embassy Lake Terraces',
+      address: 'Outer Ring Road, Hebbal',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 13.0480,
+      lng: 77.5950,
+      adults: 32,
+      children: 10,
+      elderly: 6,
+    },
+    {
+      phone: '9843486832',
+      name: 'Brigade Millennium',
+      address: 'Millennium Avenue, JP Nagar 7th Phase',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.8940,
+      lng: 77.5790,
+      adults: 35,
+      children: 11,
+      elderly: 7,
+    },
+    {
+      phone: '9777773625',
+      name: 'SNN Raj Serenity',
+      address: 'Begur Koppa Road, Yelenahalli',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.8750,
+      lng: 77.6250,
+      adults: 33,
+      children: 10,
+      elderly: 6,
+    },
+    {
+      phone: '9666673625',
+      name: 'Prestige Falaknuma',
+      address: 'Koramangala 1st Block, Near Silk Board',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.9210,
+      lng: 77.6150,
+      adults: 35,
+      children: 12,
+      elderly: 7,
+    },
+    {
+      phone: '9755532811',
+      name: 'Godrej Woodsman Estate',
+      address: 'Bellary Road, Hebbal',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 13.0510,
+      lng: 77.5920,
+      adults: 30,
+      children: 10,
+      elderly: 6,
+    },
+    {
+      phone: '9876543210',
+      name: 'Phoenix One Bangalore West',
+      address: '1 Dr. Rajkumar Road, Rajajinagar',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.9982,
+      lng: 77.5564,
+      adults: 35,
+      children: 11,
+      elderly: 6,
+    },
+    {
+      phone: '9854222318',
+      name: 'Total Environment Windmills of Your Mind',
+      address: 'Road No 3, EPIP Zone, Whitefield',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.9784,
+      lng: 77.7282,
+      adults: 34,
+      children: 10,
+      elderly: 6,
+    },
+    {
+      phone: '9825528197',
+      name: 'Bhartiya City Nikoo Homes',
+      address: 'Thanisandra Main Road, Kannuru',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 13.0720,
+      lng: 77.6380,
+      adults: 35,
+      children: 12,
+      elderly: 7,
+    },
+  ];
+
+  const allCreatedMembers = [];
+  const householdList = [];
+
+  for (let i = 0; i < buildingsConfig.length; i++) {
+    const cfg = buildingsConfig[i];
+    const user = citizenUserMap.get(cfg.phone)!;
+
+    const hh = await prisma.household.create({
+      data: {
+        userId: user.id,
+        name: cfg.name,
+        address: cfg.address,
+        city: cfg.city,
+        state: cfg.state,
+        latitude: cfg.lat,
+        longitude: cfg.lng,
+      },
+    });
+    householdList.push({ household: hh, config: cfg, user });
+
+    // Generate members
+    if (cfg.name === 'Palm Meadows Villa 101') {
+      const pmMembers = [
+        { name: 'Priya Sharma', age: 38, rel: 'Self', cat: 'ADULT' },
+        { name: 'Ramesh Sharma', age: 42, rel: 'Spouse', cat: 'ADULT' },
+        { name: 'Aarav Sharma', age: 10, rel: 'Child', cat: 'CHILD' },
+        { name: 'Ananya Sharma', age: 7, rel: 'Child', cat: 'CHILD' },
+        { name: 'Savitri Sharma', age: 68, rel: 'Parent', cat: 'ELDERLY' },
+      ];
+      for (const m of pmMembers) {
+        const mem = await prisma.householdMember.create({
+          data: {
+            householdId: hh.id,
             name: m.name,
             age: m.age,
             relationship: m.rel,
             category: m.cat,
-          })),
-        },
-      },
-      include: { members: true },
-    });
-
-    createdMembers.push(...household.members);
+          },
+        });
+        allCreatedMembers.push({ member: mem, household: hh, config: cfg });
+      }
+    } else {
+      let idx = 1;
+      for (let a = 0; a < cfg.adults; a++, idx++) {
+        const mem = await prisma.householdMember.create({
+          data: {
+            householdId: hh.id,
+            name: `Resident ${cfg.name.slice(0, 8)}-${idx}`,
+            age: 25 + (idx % 35),
+            relationship: idx === 1 ? 'Self' : 'Resident',
+            category: 'ADULT',
+          },
+        });
+        allCreatedMembers.push({ member: mem, household: hh, config: cfg });
+      }
+      for (let c = 0; c < cfg.children; c++, idx++) {
+        const mem = await prisma.householdMember.create({
+          data: {
+            householdId: hh.id,
+            name: `Child ${cfg.name.slice(0, 8)}-${idx}`,
+            age: 2 + (idx % 15),
+            relationship: 'Child',
+            category: 'CHILD',
+          },
+        });
+        allCreatedMembers.push({ member: mem, household: hh, config: cfg });
+      }
+      for (let e = 0; e < cfg.elderly; e++, idx++) {
+        const mem = await prisma.householdMember.create({
+          data: {
+            householdId: hh.id,
+            name: `Elder ${cfg.name.slice(0, 8)}-${idx}`,
+            age: 62 + (idx % 22),
+            relationship: 'Parent',
+            category: 'ELDERLY',
+          },
+        });
+        allCreatedMembers.push({ member: mem, household: hh, config: cfg });
+      }
+    }
   }
 
-  // 9. Expected Locations demonstrating all types:
-  // HOME, SHELTER (targeting different shelters to show capacity statuses), OTHER_CITY, UNKNOWN
-  // Also demonstrates shelter capacity states:
-  // East Pier Municipal High School (capacity 6): 7 people choosing it -> OVER_CAPACITY (expected 7, remaining -1)
-  // City Central Indoor Sports Arena (capacity 10): 8 people choosing it -> NEAR_CAPACITY (expected 8, remaining 2)
-  // North Heights Community Center (capacity 40): 3 people choosing it -> AVAILABLE (expected 3, remaining 37)
+  // 9. Expected Locations demonstrating occupancy across all 14 shelters:
+  // - Mangaldhama Multi Utility Hall (capacity 41) -> OVER_CAPACITY (85 expected)
+  // - Our Lady of Vailankanni Hall (capacity 46) -> NEAR_CAPACITY (42 expected)
+  // - Koramangala Indoor Stadium (capacity 1000) -> AVAILABLE (25 expected)
+  // - Other shelters -> AVAILABLE
+  const shelterOverCap = '00000000-0000-0000-0000-000000000103';
+  const shelterNearCap = '00000000-0000-0000-0000-000000000102';
+  const shelterAvail = '00000000-0000-0000-0000-000000000101';
+  const otherShelters = [
+    '00000000-0000-0000-0000-000000000104',
+    '00000000-0000-0000-0000-000000000105',
+    '00000000-0000-0000-0000-000000000106',
+    '00000000-0000-0000-0000-000000000107',
+    '00000000-0000-0000-0000-000000000108',
+    '00000000-0000-0000-0000-000000000109',
+    '00000000-0000-0000-0000-000000000110',
+    '00000000-0000-0000-0000-000000000111',
+    '00000000-0000-0000-0000-000000000112',
+    '00000000-0000-0000-0000-000000000113',
+    '00000000-0000-0000-0000-000000000114',
+  ];
 
-  // Arun's family (4 members in Building A-182):
-  // Arun -> HOME
-  // Priya -> HOME
-  // Aarav -> HOME
-  // Kavita -> SHELTER (City Central)
-  await prisma.expectedLocation.createMany({
-    data: [
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[0].id,
-        expectedType: 'HOME',
+  let overCapCount = 0;
+  let nearCapCount = 0;
+  let availCount = 0;
+
+  for (let i = 0; i < allCreatedMembers.length; i++) {
+    const item = allCreatedMembers[i];
+    let expectedType = 'HOME';
+    let shelterId: string | null = null;
+    let otherCity: string | null = null;
+
+    if (overCapCount < 85 && (i % 3 === 0)) {
+      expectedType = 'SHELTER';
+      shelterId = shelterOverCap;
+      overCapCount++;
+    } else if (nearCapCount < 42 && (i % 5 === 0)) {
+      expectedType = 'SHELTER';
+      shelterId = shelterNearCap;
+      nearCapCount++;
+    } else if (availCount < 25 && (i % 7 === 0)) {
+      expectedType = 'SHELTER';
+      shelterId = shelterAvail;
+      availCount++;
+    } else if (i % 11 === 0) {
+      expectedType = 'OTHER_CITY';
+      otherCity = 'Mysuru';
+    } else if (i % 17 === 0) {
+      expectedType = 'UNKNOWN';
+    } else if (i % 4 === 0) {
+      expectedType = 'SHELTER';
+      shelterId = otherShelters[i % otherShelters.length];
+    }
+
+    await prisma.expectedLocation.create({
+      data: {
+        disasterId: primaryDisaster.id,
+        householdMemberId: item.member.id,
+        expectedType,
+        shelterId,
+        otherCity,
         reconfirmedStatus: 'SAME_PLAN',
         reconfirmedAt: new Date(),
       },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[1].id,
-        expectedType: 'HOME',
-        reconfirmedStatus: 'SAME_PLAN',
-        reconfirmedAt: new Date(),
-      },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[2].id,
-        expectedType: 'HOME',
-        reconfirmedStatus: 'SAME_PLAN',
-        reconfirmedAt: new Date(),
-      },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[3].id,
-        expectedType: 'SHELTER',
-        shelterId: shelterCenter.id,
-        reconfirmedStatus: 'SAME_PLAN',
-        reconfirmedAt: new Date(),
-      },
-    ],
-  });
+    });
 
-  // Meera's family (Building A-182, Flat 202 - 3 members):
-  // Meera -> SHELTER (East Pier)
-  // Sanjay -> SHELTER (East Pier)
-  // Tara -> SHELTER (East Pier)
-  await prisma.expectedLocation.createMany({
-    data: [
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[4].id,
-        expectedType: 'SHELTER',
-        shelterId: shelterEast.id,
-        reconfirmedStatus: 'CHANGE_LOCATION',
-        reconfirmedAt: new Date(),
+    // Emergency Status
+    let status = 'SAFE';
+    if (item.config.name === 'Palm Meadows Villa 101' || item.config.name === 'Salarpuria Sattva Greenage') {
+      if (i % 4 === 0) status = 'IN_DISTRESS';
+      else if (i % 5 === 0) status = 'UNACCOUNTED';
+    }
+    await prisma.emergencyStatus.create({
+      data: {
+        disasterId: primaryDisaster.id,
+        householdMemberId: item.member.id,
+        status,
       },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[5].id,
-        expectedType: 'SHELTER',
-        shelterId: shelterEast.id,
-        reconfirmedStatus: 'SAME_PLAN',
-        reconfirmedAt: new Date(),
-      },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[6].id,
-        expectedType: 'SHELTER',
-        shelterId: shelterEast.id,
-        reconfirmedStatus: 'SAME_PLAN',
-        reconfirmedAt: new Date(),
-      },
-    ],
-  });
+    });
 
-  // Rajesh's family (4 members):
-  // Rajesh -> SHELTER (East Pier)
-  // Geeta -> SHELTER (East Pier)
-  // Ramesh -> SHELTER (East Pier)
-  // Lata -> SHELTER (East Pier)
-  // Total at East Pier = 3 + 4 = 7 (Capacity 6 -> OVER_CAPACITY!)
-  await prisma.expectedLocation.createMany({
-    data: [
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[7].id,
-        expectedType: 'SHELTER',
-        shelterId: shelterEast.id,
-      },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[8].id,
-        expectedType: 'SHELTER',
-        shelterId: shelterEast.id,
-      },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[9].id,
-        expectedType: 'SHELTER',
-        shelterId: shelterEast.id,
-      },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[10].id,
-        expectedType: 'SHELTER',
-        shelterId: shelterEast.id,
-      },
-    ],
-  });
+    // Create Emergency Request for select distress members
+    if (status === 'IN_DISTRESS' && i % 2 === 0) {
+      const isTrapped = i % 3 === 0;
+      const isWaterRising = i % 2 === 0;
 
-  // Sunita's family (2 members):
-  // Sunita -> OTHER_CITY (Bangalore)
-  // Aditi -> OTHER_CITY (Bangalore)
-  await prisma.expectedLocation.createMany({
-    data: [
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[11].id,
-        expectedType: 'OTHER_CITY',
-        otherCity: 'Bangalore',
-      },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[12].id,
-        expectedType: 'OTHER_CITY',
-        otherCity: 'Bangalore',
-      },
-    ],
-  });
+      const req = await prisma.emergencyRequest.create({
+        data: {
+          disasterId: primaryDisaster.id,
+          householdMemberId: item.member.id,
+          latitude: item.config.lat + 0.001 * (i % 3),
+          longitude: item.config.lng + 0.001 * (i % 3),
+          address: item.config.address,
+          description: isWaterRising
+            ? 'Water level rising rapidly on ground floor, elderly resident present.'
+            : 'Submerged access pathway, evacuation support needed.',
+          priorityScore: 75,
+          rescueStatus: 'PENDING',
+        },
+      });
 
-  // David's family (3 members):
-  // David -> UNKNOWN
-  // Maria -> SHELTER (North Heights)
-  // Lucas -> SHELTER (North Heights)
-  await prisma.expectedLocation.createMany({
-    data: [
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[13].id,
-        expectedType: 'UNKNOWN',
-      },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[14].id,
-        expectedType: 'SHELTER',
-        shelterId: shelterNorth.id,
-      },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[15].id,
-        expectedType: 'SHELTER',
-        shelterId: shelterNorth.id,
-      },
-    ],
-  });
+      if (isTrapped) {
+        await prisma.emergencyCondition.create({
+          data: { emergencyRequestId: req.id, conditionType: 'TRAPPED' },
+        });
+      }
+      if (isWaterRising) {
+        await prisma.emergencyCondition.create({
+          data: { emergencyRequestId: req.id, conditionType: 'WATER_RISING' },
+        });
+      }
+      if (item.member.category === 'ELDERLY') {
+        await prisma.emergencyCondition.create({
+          data: { emergencyRequestId: req.id, conditionType: 'SERIOUSLY_UNWELL' },
+        });
+      }
+    }
+  }
 
-  // Ananya's family:
-  // Ananya -> HOME
-  // Debashis -> HOME
-  await prisma.expectedLocation.createMany({
-    data: [
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[16].id,
-        expectedType: 'HOME',
-      },
-      {
-        disasterId: floodDisaster.id,
-        householdMemberId: createdMembers[17].id,
-        expectedType: 'HOME',
-      },
-    ],
-  });
-
-  // 10. DURING Disaster Live Statuses (SAFE, IN_DISTRESS, UNACCOUNTED)
-  // Arun (Safe), Priya (Safe), Aarav (In Distress), Kavita (Safe)
-  await prisma.emergencyStatus.createMany({
-    data: [
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[0].id, status: 'SAFE' },
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[1].id, status: 'SAFE' },
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[2].id, status: 'IN_DISTRESS' },
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[3].id, status: 'SAFE' },
-      // Meera's family: Safe
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[4].id, status: 'SAFE' },
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[5].id, status: 'SAFE' },
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[6].id, status: 'SAFE' },
-      // Rajesh's family: Rajesh & Ramesh in distress
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[7].id, status: 'IN_DISTRESS' },
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[8].id, status: 'SAFE' },
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[9].id, status: 'IN_DISTRESS' },
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[10].id, status: 'UNACCOUNTED' },
-      // Sunita: Unaccounted
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[11].id, status: 'UNACCOUNTED' },
-      { disasterId: floodDisaster.id, householdMemberId: createdMembers[12].id, status: 'UNACCOUNTED' },
-    ],
-  });
-
-  // 11. Emergency Requests with multiple conditions, priority scores & rescue lifecycle
-  // Request 1: High priority (Water rising + Children present + Trapped) -> Score: 15 + 10 + 20 = 45 -> TEAM_ASSIGNED
-  const req1 = await prisma.emergencyRequest.create({
-    data: {
-      disasterId: floodDisaster.id,
-      householdMemberId: createdMembers[2].id, // Aarav Kumar
-      latitude: 13.0827,
-      longitude: 80.2707,
-      address: 'Building A-182, 1st Floor Lobby, Riverside Drive',
-      description: 'Basement wall breach! Water level at 4 feet and rising quickly. Child stranded on stairs.',
-      priorityScore: 45,
-      rescueStatus: 'TEAM_ASSIGNED',
-      conditions: {
-        create: [
-          { conditionType: 'WATER_RISING' },
-          { conditionType: 'CHILDREN_INFANTS_PRESENT' },
-          { conditionType: 'TRAPPED' },
-        ],
-      },
-      rescueAssignments: {
-        create: [
-          {
-            teamName: 'Bravo-4 Rapid Water Rescue Squad',
-            assignedByUserId: rescuer.id,
-            status: 'TEAM_ASSIGNED',
-            notes: 'Inflatable raft boat deployed from Sector 3 checkpoint.',
-          },
-        ],
-      },
-    },
-  });
-
-  // Request 2: Critical priority (Heavily injured + Fire + Elderly/Physically disabled) -> Score: 25 + 30 + 10 = 65 -> PENDING
-  const req2 = await prisma.emergencyRequest.create({
-    data: {
-      disasterId: floodDisaster.id,
-      householdMemberId: createdMembers[7].id, // Rajesh Patel
-      latitude: 13.0845,
-      longitude: 80.2735,
-      address: 'Riverside Enclave, Block C-12, Ground Floor',
-      description: 'Electrical transformer spark after flooding. Severe leg injury from debris. Needs urgent stretcher extraction.',
-      priorityScore: 65,
-      rescueStatus: 'PENDING',
-      conditions: {
-        create: [
-          { conditionType: 'HEAVILY_INJURED' },
-          { conditionType: 'FIRE' },
-          { conditionType: 'PHYSICALLY_DISABLED' },
-        ],
-      },
-    },
-  });
-
-  // Request 3: Seriously unwell + Need rescue -> Score: 20 + 15 = 35 -> SAFELY_RESCUED
-  const req3 = await prisma.emergencyRequest.create({
-    data: {
-      disasterId: floodDisaster.id,
-      householdMemberId: createdMembers[9].id, // Ramesh Patel (Elderly)
-      latitude: 13.0845,
-      longitude: 80.2735,
-      address: 'Riverside Enclave, Block C-12, 2nd Floor',
-      description: 'Oxygen concentrator depleted due to power failure. Medical transport required.',
-      priorityScore: 35,
-      rescueStatus: 'SAFELY_RESCUED',
-      conditions: {
-        create: [
-          { conditionType: 'SERIOUSLY_UNWELL' },
-          { conditionType: 'NEED_RESCUE' },
-        ],
-      },
-      rescueAssignments: {
-        create: [
-          {
-            teamName: 'Medic-1 Airborne Evacuation Unit',
-            assignedByUserId: rescuer.id,
-            status: 'SAFELY_RESCUED',
-            notes: 'Successfully transported to Apollo Lifeline Emergency Hospital. Vitals stable.',
-          },
-        ],
-      },
-    },
-  });
-
-  // Request 4: Not Found demonstration -> NOT_FOUND
-  const req4 = await prisma.emergencyRequest.create({
-    data: {
-      disasterId: floodDisaster.id,
-      householdMemberId: createdMembers[10].id, // Lata Patel
-      latitude: 13.0845,
-      longitude: 80.2735,
-      address: 'Riverside Enclave Outskirts',
-      description: 'Last seen near community shed prior to flash surge.',
-      priorityScore: 20,
-      rescueStatus: 'NOT_FOUND',
-      conditions: {
-        create: [
-          { conditionType: 'TRAPPED' },
-        ],
-      },
-      rescueAssignments: {
-        create: [
-          {
-            teamName: 'Delta Search & Recon Unit',
-            assignedByUserId: rescuer.id,
-            status: 'NOT_FOUND',
-            notes: 'Area thoroughly searched with sonar; premises empty. Continuing search downstream.',
-          },
-        ],
-      },
-    },
-  });
-
-  // 12. Notifications
+  // 10. Sample Notifications
+  const priyaUser = citizenUserMap.get('9800000011')!;
   await prisma.notification.createMany({
     data: [
       {
-        userId: citizenUsers[0].id,
-        disasterId: floodDisaster.id,
+        userId: priyaUser.id,
+        disasterId: primaryDisaster.id,
         type: 'DISASTER_ALERT',
-        message: 'URGENT: Red Alert Flash Flood predicted for River Basin Zone starting in 18 hours.',
+        message: 'ORANGE ALERT: Severe Flash Flood Warning issued for Koramangala & HSR Basin.',
         status: 'UNREAD',
       },
       {
-        userId: citizenUsers[0].id,
-        disasterId: floodDisaster.id,
-        type: 'RECONFIRMATION',
-        message: 'Reconfirmation needed: Please review your household location plan within the next 12 hours.',
-        status: 'UNREAD',
-      },
-      {
-        userId: citizenUsers[1].id,
-        disasterId: floodDisaster.id,
-        type: 'SHELTER_UPDATE',
-        message: 'Shelter notice: East Pier High School is operating at full capacity. Alternate shelters available.',
+        userId: priyaUser.id,
+        disasterId: primaryDisaster.id,
+        type: 'EXPECTED_LOCATION_REQUEST',
+        message: 'Please submit your household expected location and evacuation plan immediately.',
         status: 'READ',
-        readAt: new Date(),
       },
     ],
   });
 
-  console.log('STRIDE demo seed complete!');
-  console.log(`- Created ${citizensData.length} citizens and 1 rescuer`);
-  console.log(`- Created ${householdsData.length} households with ${createdMembers.length} members`);
-  console.log(`- Created 4 shelters demonstrating AVAILABLE, NEAR_CAPACITY, and OVER_CAPACITY`);
-  console.log(`- Created 8 emergency facilities and 4 demo road corridors`);
-  console.log(`- Created 1 active flood disaster with high-risk affected zone`);
-  console.log(`- Populated BEFORE expected locations and DURING emergency requests & rescue lifecycle`);
+  console.log('✅ Canonical Bengaluru seed completed successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('Seed error:', e);
     process.exit(1);
   })
   .finally(async () => {
