@@ -580,7 +580,10 @@ export async function getZoneSummary(req: AuthenticatedRequest, res: Response): 
 export async function submitReconfirmation(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id: disasterId } = req.params;
-    const { choice } = req.body; // 'SAME_PLAN' | 'CHANGE_LOCATION' | 'NOT_SURE'
+    const choice =
+      req.body.choice ||
+      req.body.action ||
+      (req.body.reconfirmations && req.body.reconfirmations[0]?.action);
     const userId = req.user!.userId;
 
     if (!choice || !['SAME_PLAN', 'CHANGE_LOCATION', 'NOT_SURE'].includes(choice)) {
@@ -600,8 +603,32 @@ export async function submitReconfirmation(req: AuthenticatedRequest, res: Respo
 
     const memberIds = household.members.map((m) => m.id);
 
+    // Extract optional location change targets
+    const expectedType =
+      req.body.expectedLocationType ||
+      req.body.reconfirmations?.[0]?.expectedLocationType ||
+      'HOME';
+    const shelterId =
+      req.body.shelterId !== undefined
+        ? req.body.shelterId
+        : req.body.reconfirmations?.[0]?.shelterId || null;
+    const otherCity =
+      req.body.otherCity !== undefined
+        ? req.body.otherCity
+        : req.body.reconfirmations?.[0]?.otherCity || null;
+
     // Update expected locations reconfirmedStatus
     for (const memberId of memberIds) {
+      const updateData: any = {
+        reconfirmedStatus: choice,
+        reconfirmedAt: new Date(),
+      };
+      if (choice === 'CHANGE_LOCATION') {
+        updateData.expectedType = expectedType;
+        updateData.shelterId = shelterId;
+        updateData.otherCity = otherCity;
+      }
+
       await prisma.expectedLocation.upsert({
         where: {
           disasterId_householdMemberId: {
@@ -609,14 +636,13 @@ export async function submitReconfirmation(req: AuthenticatedRequest, res: Respo
             householdMemberId: memberId,
           },
         },
-        update: {
-          reconfirmedStatus: choice,
-          reconfirmedAt: new Date(),
-        },
+        update: updateData,
         create: {
           disasterId,
           householdMemberId: memberId,
-          expectedType: 'HOME',
+          expectedType: choice === 'CHANGE_LOCATION' ? expectedType : 'HOME',
+          shelterId: choice === 'CHANGE_LOCATION' ? shelterId : null,
+          otherCity: choice === 'CHANGE_LOCATION' ? otherCity : null,
           reconfirmedStatus: choice,
           reconfirmedAt: new Date(),
         },

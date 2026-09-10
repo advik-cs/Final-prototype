@@ -22,12 +22,16 @@ const isLocal =
 export const BEFORE_API_BASE_URL =
   env.VITE_BEFORE_API_URL ||
   universalApi ||
-  (isLocal ? 'http://localhost:4000/api' : '/api');
+  (isLocal && typeof window !== 'undefined' && window.location.port !== '3000'
+    ? 'http://localhost:4000/api'
+    : '/api');
 
 export const DURING_API_BASE_URL =
   env.VITE_DURING_API_URL ||
   universalApi ||
-  (isLocal ? 'http://localhost:5000/api' : '/api');
+  (isLocal && typeof window !== 'undefined' && window.location.port !== '3000'
+    ? 'http://localhost:5000/api'
+    : '/api');
 
 export const FLOODX_EMBED_URL =
   env.VITE_FLOODX_EMBED_URL ||

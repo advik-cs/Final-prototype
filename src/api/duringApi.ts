@@ -4,7 +4,10 @@ import { DURING_API_BASE_URL, ApiError } from './config';
  * Standard HTTP helper for DURING Backend
  */
 async function duringRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem('stride_during_token');
+  const token =
+    localStorage.getItem('stride_during_token') ||
+    localStorage.getItem('stride_token') ||
+    localStorage.getItem('stride_before_token');
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),

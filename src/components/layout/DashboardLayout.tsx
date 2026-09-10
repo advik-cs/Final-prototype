@@ -26,6 +26,7 @@ export type DisasterMode = 'BEFORE' | 'DURING' | 'FLOODX';
 
 export type BeforeTab =
   | 'dashboard'
+  | 'essentials'
   | 'map'
   | 'household'
   | 'shelters'
@@ -102,6 +103,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const beforeNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ...(user.role === 'CITIZEN' ? [{ id: 'essentials', label: 'Essentials', icon: ShieldCheck }] : []),
     { id: 'map', label: 'Map', icon: MapIcon },
     ...(user.role !== 'AUTHORITY' ? [{ id: 'household', label: 'Household Members', icon: Users }] : []),
     { id: 'shelters', label: user.role === 'AUTHORITY' ? 'Shelter Information' : 'Shelter Selection', icon: Tent },

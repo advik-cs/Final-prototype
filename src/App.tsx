@@ -13,6 +13,7 @@ import { ReconfirmationView } from './components/before/ReconfirmationView.tsx';
 import { ExpectedOccupancyView } from './components/before/ExpectedOccupancyView.tsx';
 import { PredictedThreatsView } from './components/before/PredictedThreatsView.tsx';
 import { BeforeMapView } from './components/before/BeforeMapView.tsx';
+import { EssentialsView } from './components/before/EssentialsView.tsx';
 import { ErrorBoundary } from './components/common/ErrorBoundary.tsx';
 
 // During Components
@@ -149,6 +150,13 @@ export default function App() {
               user={currentUser}
               activeDisaster={activeDisaster}
               onNavigateTab={(tab) => setBeforeTab(tab)}
+            />
+          )}
+
+          {beforeTab === 'essentials' && currentUser.role === 'CITIZEN' && (
+            <EssentialsView
+              user={currentUser}
+              activeDisaster={activeDisaster}
             />
           )}
 

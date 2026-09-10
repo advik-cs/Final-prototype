@@ -140,6 +140,10 @@ export const ReconfirmationView: React.FC<ReconfirmationViewProps> = ({
       }
 
       const res = await disasterService.submitReconfirmation(activeDisaster.id, {
+        choice,
+        expectedLocationType: options?.expectedLocationType,
+        shelterId: options?.shelterId || selectedShelterId,
+        otherCity: options?.otherCity || destinationCity,
         reconfirmations: items,
       });
 
