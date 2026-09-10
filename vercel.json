@@ -1,13 +1,13 @@
 {
   "version": 2,
   "functions": {
-    "api/[...slug].ts": {
+    "api/**": {
       "includeFiles": "prisma/**"
     }
   },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api($|/)).*)",
       "destination": "/index.html"
     }
   ]
