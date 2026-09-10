@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { authService, User } from './services/authService.ts';
+import { authApi } from './api/authApi.ts';
 import { disasterService, DisasterEvent } from './services/disasterService.ts';
 import { LoginPage } from './components/auth/LoginPage.tsx';
 import { DashboardLayout, BeforeTab, DuringTab, DisasterMode } from './components/layout/DashboardLayout.tsx';
@@ -12,6 +13,7 @@ import { ReconfirmationView } from './components/before/ReconfirmationView.tsx';
 import { ExpectedOccupancyView } from './components/before/ExpectedOccupancyView.tsx';
 import { PredictedThreatsView } from './components/before/PredictedThreatsView.tsx';
 import { BeforeMapView } from './components/before/BeforeMapView.tsx';
+import { ErrorBoundary } from './components/common/ErrorBoundary.tsx';
 
 // During Components
 import { DuringDashboardView } from './components/during/DuringDashboardView.tsx';
@@ -19,6 +21,7 @@ import { AreYouSafeView } from './components/during/AreYouSafeView.tsx';
 import { DuringBuildingsView } from './components/during/DuringBuildingsView.tsx';
 import { DuringMapView } from './components/during/DuringMapView.tsx';
 import { RescueOperationsView } from './components/during/RescueOperationsView.tsx';
+import { FloodXView } from './components/floodx/FloodXView.tsx';
 
 import { Loader2 } from 'lucide-react';
 
@@ -26,8 +29,15 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
 
-  // Disaster Mode & Tabs
-  const [mode, setMode] = useState<DisasterMode>('BEFORE');
+  // Disaster Mode & Tabs (synchronized with URL)
+  const [mode, setMode] = useState<DisasterMode>(() => {
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname.toLowerCase();
+      if (p === '/floodx' || window.location.hash === '#floodx') return 'FLOODX';
+      if (p === '/during' || window.location.hash === '#during') return 'DURING';
+    }
+    return 'BEFORE';
+  });
   const [beforeTab, setBeforeTab] = useState<BeforeTab>('dashboard');
   const [duringTab, setDuringTab] = useState<DuringTab>('dashboard');
 
@@ -35,6 +45,19 @@ export default function App() {
   const [activeDisaster, setActiveDisaster] = useState<DisasterEvent | null>(null);
 
   useEffect(() => {
+    // Synchronize mode with browser back/forward buttons
+    const handlePopState = () => {
+      const p = window.location.pathname.toLowerCase();
+      if (p === '/floodx' || window.location.hash === '#floodx') {
+        setMode('FLOODX');
+      } else if (p === '/during' || window.location.hash === '#during') {
+        setMode('DURING');
+      } else {
+        setMode('BEFORE');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+
     // Initial check of stored user
     const user = authService.getStoredUser();
     if (user) {
@@ -42,7 +65,23 @@ export default function App() {
     }
     setAuthChecking(false);
     loadDisasters();
+
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Protect buildings tab from citizen access
+  useEffect(() => {
+    if (currentUser?.role === 'CITIZEN' && duringTab === 'buildings') {
+      setDuringTab('dashboard');
+    }
+  }, [currentUser?.role, duringTab]);
+
+  // Protect household and reconfirmation tabs from authority access in BEFORE mode
+  useEffect(() => {
+    if (currentUser?.role === 'AUTHORITY' && (beforeTab === 'household' || beforeTab === 'reconfirmation')) {
+      setBeforeTab('dashboard');
+    }
+  }, [currentUser?.role, beforeTab]);
 
   const loadDisasters = async () => {
     try {
@@ -66,42 +105,24 @@ export default function App() {
     setCurrentUser(null);
   };
 
-  // Quick switch role between Citizen and Rescuer
-  const handleSwitchRole = async (targetRole: 'CITIZEN' | 'RESCUER') => {
+  // Quick switch role between Citizen, Authority, and Rescuer
+  const handleSwitchRole = async (targetRole: 'CITIZEN' | 'AUTHORITY' | 'RESCUER') => {
     try {
-      if (targetRole === 'CITIZEN') {
-        if (currentUser?.role === 'CITIZEN') return;
-        const savedCitizenStr = localStorage.getItem('stride_saved_citizen');
-        if (savedCitizenStr) {
-          try {
-            const parsed = JSON.parse(savedCitizenStr);
-            setCurrentUser(parsed);
-            localStorage.setItem('stride_user', JSON.stringify(parsed));
-            return;
-          } catch {
-            // fallback
-          }
-        }
-        const res = await authService.login({
-          mobileNumber: '9840112345',
-          password: 'stride123',
-          role: 'CITIZEN',
-        });
-        setCurrentUser(res.user);
-      } else {
-        if (currentUser?.role === 'RESCUER') return;
-        if (currentUser?.role === 'CITIZEN') {
-          localStorage.setItem('stride_saved_citizen', JSON.stringify(currentUser));
-        }
-        const res = await authService.login({
-          mobileNumber: '9880011223',
-          password: 'stride123',
-          role: 'RESCUER',
-        });
-        setCurrentUser(res.user);
-      }
+      if (currentUser?.role === targetRole) return;
+      const user = await authApi.loginDemo(targetRole);
+      setCurrentUser(user);
     } catch (e) {
       console.error('Failed to switch demo role:', e);
+    }
+  };
+
+  // Switch mode and update browser URL path
+  const handleSwitchMode = (newMode: DisasterMode) => {
+    setMode(newMode);
+    const targetPath =
+      newMode === 'FLOODX' ? '/floodx' : newMode === 'DURING' ? '/during' : '/before';
+    if (typeof window !== 'undefined' && window.location.pathname !== targetPath) {
+      window.history.pushState(null, '', targetPath);
     }
   };
 
@@ -121,7 +142,7 @@ export default function App() {
     <DashboardLayout
       user={currentUser}
       mode={mode}
-      onSwitchMode={(newMode) => setMode(newMode)}
+      onSwitchMode={handleSwitchMode}
       onLogout={handleLogout}
       activeBeforeTab={beforeTab}
       onSelectBeforeTab={(t) => setBeforeTab(t)}
@@ -144,13 +165,15 @@ export default function App() {
           )}
 
           {beforeTab === 'map' && (
-            <BeforeMapView
-              user={currentUser}
-              activeDisaster={activeDisaster}
-            />
+            <ErrorBoundary fallbackTitle="Unable to load Preparedness Map Intelligence">
+              <BeforeMapView
+                user={currentUser}
+                activeDisaster={activeDisaster}
+              />
+            </ErrorBoundary>
           )}
 
-          {beforeTab === 'household' && (
+          {beforeTab === 'household' && currentUser.role !== 'AUTHORITY' && (
             <HouseholdMembersView
               user={currentUser}
               activeDisaster={activeDisaster}
@@ -164,7 +187,7 @@ export default function App() {
             />
           )}
 
-          {beforeTab === 'reconfirmation' && (
+          {beforeTab === 'reconfirmation' && currentUser.role !== 'AUTHORITY' && (
             <ReconfirmationView
               user={currentUser}
               activeDisaster={activeDisaster}
@@ -209,7 +232,7 @@ export default function App() {
             />
           )}
 
-          {duringTab === 'buildings' && (
+          {duringTab === 'buildings' && currentUser.role !== 'CITIZEN' && (
             <DuringBuildingsView
               user={currentUser}
               activeDisaster={activeDisaster}
@@ -217,10 +240,13 @@ export default function App() {
           )}
 
           {duringTab === 'maps' && (
-            <DuringMapView
-              user={currentUser}
-              activeDisaster={activeDisaster}
-            />
+            <ErrorBoundary fallbackTitle="Unable to load Incident Operations Map">
+              <DuringMapView
+                user={currentUser}
+                activeDisaster={activeDisaster}
+                onNavigateTab={(t) => setDuringTab(t)}
+              />
+            </ErrorBoundary>
           )}
 
           {duringTab === 'rescue' && (
@@ -231,6 +257,13 @@ export default function App() {
             />
           )}
         </>
+      )}
+
+      {/* MODE 3: FLOODX SATELLITE INTELLIGENCE (EMBEDDED) */}
+      {mode === 'FLOODX' && (
+        <FloodXView
+          onReturnToMode={(targetMode) => handleSwitchMode(targetMode)}
+        />
       )}
     </DashboardLayout>
   );

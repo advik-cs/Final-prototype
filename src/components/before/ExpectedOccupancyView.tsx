@@ -12,6 +12,8 @@ import {
   Search,
   Filter,
   Eye,
+  Loader2,
+  Lock,
 } from 'lucide-react';
 
 interface ExpectedOccupancyViewProps {
@@ -25,6 +27,7 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
 }) => {
   const [buildings, setBuildings] = useState<BuildingIntelligence[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRisk, setFilterRisk] = useState<'ALL' | 'AFFECTED' | 'UNAFFECTED'>('ALL');
 
@@ -35,11 +38,14 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
   const loadBuildings = async () => {
     if (!activeDisaster) return;
     setLoading(true);
+    setErrorMessage(null);
     try {
       const list = await disasterService.getBuildingIntelligence(activeDisaster.id);
       setBuildings(list);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error('Failed to load building intelligence:', e);
+      setErrorMessage(e?.message || 'Failed to load building occupancy intelligence');
+      setBuildings([]);
     } finally {
       setLoading(false);
     }
@@ -107,8 +113,63 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
         </div>
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-[#C8D9E6]/60 p-12 text-center shadow-sm">
+          <Loader2 className="w-10 h-10 animate-spin text-[#2F4156] mb-4" />
+          <h3 className="text-lg font-bold text-[#2F4156]">
+            Loading Building Intelligence...
+          </h3>
+          <p className="text-sm font-medium text-[#567C8D] mt-1">
+            Evaluating pre-disaster census and home occupancy plans
+          </p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {!loading && errorMessage && (
+        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-8 text-center max-w-2xl mx-auto shadow-sm">
+          <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-4">
+            {errorMessage.toLowerCase().includes('authorized') || errorMessage.toLowerCase().includes('role') ? (
+              <Lock className="w-7 h-7" />
+            ) : (
+              <AlertTriangle className="w-7 h-7" />
+            )}
+          </div>
+          <h3 className="text-lg font-bold text-amber-900 mb-2">
+            Access Restricted or Unavailable
+          </h3>
+          <p className="text-sm text-amber-800 font-medium mb-4">
+            {errorMessage}
+          </p>
+          {(errorMessage.toLowerCase().includes('rescuer') || errorMessage.toLowerCase().includes('citizen')) && (
+            <div className="text-xs text-amber-700 bg-amber-100/70 border border-amber-200 rounded-xl p-3 inline-block max-w-md text-left">
+              💡 <strong>Role Notice:</strong> Building census intelligence is designated for Rescuer & Authority personnel. Use the <strong>Role Switcher</strong> at the top right of the dashboard to switch to <strong>RESCUER</strong> to view this live dataset.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && !errorMessage && filtered.length === 0 && (
+        <div className="bg-white rounded-3xl border border-[#C8D9E6]/60 p-12 text-center max-w-xl mx-auto shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-[#C8D9E6]/30 text-[#567C8D] flex items-center justify-center mx-auto mb-3">
+            <Building2 className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-[#2F4156]">
+            No building occupancy data available
+          </h3>
+          <p className="text-xs font-medium text-[#567C8D] mt-1">
+            {searchQuery || filterRisk !== 'ALL'
+              ? 'No buildings matched your current search query or risk filter. Try clearing your filters.'
+              : 'No building census records found for the active disaster event.'}
+          </p>
+        </div>
+      )}
+
       {/* Buildings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {!loading && !errorMessage && filtered.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((b, idx) => {
           return (
             <div
@@ -224,7 +285,8 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

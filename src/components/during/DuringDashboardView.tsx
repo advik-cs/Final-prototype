@@ -264,26 +264,28 @@ export const DuringDashboardView: React.FC<DuringDashboardViewProps> = ({
       </div>
 
       {/* Quick Navigation Panels */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div
-          onClick={() => onNavigateTab('buildings')}
-          className="bg-white rounded-3xl p-6 border border-[#C8D9E6]/70 shadow-sm hover:shadow-md transition cursor-pointer flex items-center justify-between"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#C8D9E6]/30 flex items-center justify-center text-[#2F4156]">
-              <Building2 className="w-6 h-6" />
+      <div className={`grid grid-cols-1 ${user.role !== 'CITIZEN' ? 'md:grid-cols-2' : ''} gap-6`}>
+        {user.role !== 'CITIZEN' && (
+          <div
+            onClick={() => onNavigateTab('buildings')}
+            className="bg-white rounded-3xl p-6 border border-[#C8D9E6]/70 shadow-sm hover:shadow-md transition cursor-pointer flex items-center justify-between"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#C8D9E6]/30 flex items-center justify-center text-[#2F4156]">
+                <Building2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-[#2F4156]">
+                  Building Intelligence Dashboard
+                </h4>
+                <p className="text-xs text-[#567C8D]">
+                  Inspect safe, in distress, and unaccounted counts for each structure.
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-sm font-bold text-[#2F4156]">
-                Building Intelligence Dashboard
-              </h4>
-              <p className="text-xs text-[#567C8D]">
-                Inspect safe, in distress, and unaccounted counts for each structure.
-              </p>
-            </div>
+            <ArrowRight className="w-5 h-5 text-[#567C8D]" />
           </div>
-          <ArrowRight className="w-5 h-5 text-[#567C8D]" />
-        </div>
+        )}
 
         <div
           onClick={() => onNavigateTab('maps')}

@@ -13,6 +13,7 @@ import {
   Shield,
   MapPin,
   Clock,
+  Building2,
   ExternalLink,
 } from 'lucide-react';
 
@@ -54,6 +55,7 @@ export const BeforeDashboardView: React.FC<BeforeDashboardViewProps> = ({
   const adults = household?.members?.filter((m) => m.category === 'ADULT').length || 0;
   const children = household?.members?.filter((m) => m.category === 'CHILD').length || 0;
   const elderly = household?.members?.filter((m) => m.category === 'ELDERLY').length || 0;
+  const isAuthority = user.role === 'AUTHORITY';
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -102,49 +104,53 @@ export const BeforeDashboardView: React.FC<BeforeDashboardViewProps> = ({
               <span>Threat Intel</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
-            <button
-              type="button"
-              onClick={() => onNavigateTab('reconfirmation')}
-              className="px-4 py-2 rounded-xl bg-[#2F4156] hover:bg-[#1F2D3D] text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
-            >
-              <span>Reconfirm Plan</span>
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#C8D9E6]" />
-            </button>
+            {!isAuthority && (
+              <button
+                type="button"
+                onClick={() => onNavigateTab('reconfirmation')}
+                className="px-4 py-2 rounded-xl bg-[#2F4156] hover:bg-[#1F2D3D] text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+              >
+                <span>Reconfirm Plan</span>
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#C8D9E6]" />
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {/* 4 Summary Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Card 1: Registered Household */}
-        <div className="bg-white rounded-3xl p-6 border border-[#C8D9E6]/60 shadow-sm hover:shadow-md transition">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 rounded-xl bg-[#C8D9E6]/30 flex items-center justify-center text-[#2F4156]">
-              <Users className="w-5 h-5" />
+      {/* Summary Cards Grid (4 cards for Citizen, 3 cards for Authority) */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${isAuthority ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
+        {/* Card 1: Registered Household (NON-AUTHORITY ONLY) */}
+        {!isAuthority && (
+          <div className="bg-white rounded-3xl p-6 border border-[#C8D9E6]/60 shadow-sm hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-[#C8D9E6]/30 flex items-center justify-center text-[#2F4156]">
+                <Users className="w-5 h-5" />
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('household')}
+                className="text-[11px] font-bold text-[#567C8D] hover:text-[#2F4156] flex items-center gap-1"
+              >
+                Manage <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => onNavigateTab('household')}
-              className="text-[11px] font-bold text-[#567C8D] hover:text-[#2F4156] flex items-center gap-1"
-            >
-              Manage <ArrowRight className="w-3 h-3" />
-            </button>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#567C8D]">
+              Registered Household
+            </p>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156]">
+                {totalMembers}
+              </span>
+              <span className="text-xs font-semibold text-[#567C8D]">Members</span>
+            </div>
+            <div className="mt-4 pt-3 border-t border-[#F5EFEB] flex items-center justify-between text-[11px] text-[#567C8D]">
+              <span>{adults} Adults</span>
+              <span>{children} Children</span>
+              <span>{elderly} Elderly</span>
+            </div>
           </div>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#567C8D]">
-            Registered Household
-          </p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156]">
-              {totalMembers}
-            </span>
-            <span className="text-xs font-semibold text-[#567C8D]">Members</span>
-          </div>
-          <div className="mt-4 pt-3 border-t border-[#F5EFEB] flex items-center justify-between text-[11px] text-[#567C8D]">
-            <span>{adults} Adults</span>
-            <span>{children} Children</span>
-            <span>{elderly} Elderly</span>
-          </div>
-        </div>
+        )}
 
         {/* Card 2: 5km Radius Readiness */}
         <div className="bg-white rounded-3xl p-6 border border-[#C8D9E6]/60 shadow-sm hover:shadow-md transition">
@@ -170,7 +176,7 @@ export const BeforeDashboardView: React.FC<BeforeDashboardViewProps> = ({
             <span className="text-xs font-semibold text-[#567C8D]">km Radius Scope</span>
           </div>
           <div className="mt-4 pt-3 border-t border-[#F5EFEB] text-[11px] text-[#567C8D] flex items-center justify-between">
-            <span>Home: {household?.name || 'Registered Home'}</span>
+            <span>{isAuthority ? 'Coverage: Sector Jurisdiction' : `Home: ${household?.name || 'Registered Home'}`}</span>
             <span className="text-[#2F4156] font-bold">Active</span>
           </div>
         </div>
@@ -190,7 +196,7 @@ export const BeforeDashboardView: React.FC<BeforeDashboardViewProps> = ({
             </button>
           </div>
           <p className="text-xs font-bold uppercase tracking-wider text-[#567C8D]">
-            Designated Shelters
+            {isAuthority ? 'Shelter Information' : 'Designated Shelters'}
           </p>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156]">
@@ -206,36 +212,69 @@ export const BeforeDashboardView: React.FC<BeforeDashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Card 4: Reconfirmation Window */}
-        <div className="bg-white rounded-3xl p-6 border border-[#C8D9E6]/60 shadow-sm hover:shadow-md transition">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 rounded-xl bg-[#C8D9E6]/40 flex items-center justify-center text-[#2F4156]">
-              <Clock className="w-5 h-5" />
+        {/* Card 4: Reconfirmation Window (CITIZEN ONLY) */}
+        {!isAuthority && (
+          <div className="bg-white rounded-3xl p-6 border border-[#C8D9E6]/60 shadow-sm hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-[#C8D9E6]/40 flex items-center justify-center text-[#2F4156]">
+                <Clock className="w-5 h-5" />
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('reconfirmation')}
+                className="text-[11px] font-bold text-[#567C8D] hover:text-[#2F4156] flex items-center gap-1"
+              >
+                Verify <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => onNavigateTab('reconfirmation')}
-              className="text-[11px] font-bold text-[#567C8D] hover:text-[#2F4156] flex items-center gap-1"
-            >
-              Verify <ArrowRight className="w-3 h-3" />
-            </button>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#567C8D]">
+              30-Hour Window
+            </p>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156]">
+                18h
+              </span>
+              <span className="text-xs font-semibold text-[#567C8D]">Until Forecast</span>
+            </div>
+            <div className="mt-4 pt-3 border-t border-[#F5EFEB] text-[11px] text-[#567C8D] flex items-center justify-between">
+              <span>Plan: Recorded</span>
+              <span className="text-emerald-700 font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" /> Ready
+              </span>
+            </div>
           </div>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#567C8D]">
-            30-Hour Window
-          </p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156]">
-              18h
-            </span>
-            <span className="text-xs font-semibold text-[#567C8D]">Until Forecast</span>
+        )}
+
+        {/* Card 4 (Authority Alternative): Monitored Buildings */}
+        {isAuthority && (
+          <div className="bg-white rounded-3xl p-6 border border-[#C8D9E6]/60 shadow-sm hover:shadow-md transition">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 rounded-xl bg-[#C8D9E6]/40 flex items-center justify-center text-[#2F4156]">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('occupancy')}
+                className="text-[11px] font-bold text-[#567C8D] hover:text-[#2F4156] flex items-center gap-1"
+              >
+                View <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#567C8D]">
+              Monitored Buildings
+            </p>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156]">
+                16
+              </span>
+              <span className="text-xs font-semibold text-[#567C8D]">Structures</span>
+            </div>
+            <div className="mt-4 pt-3 border-t border-[#F5EFEB] text-[11px] text-[#567C8D] flex items-center justify-between">
+              <span>793 Registered Residents</span>
+              <span className="text-emerald-700 font-bold">Active</span>
+            </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-[#F5EFEB] text-[11px] text-[#567C8D] flex items-center justify-between">
-            <span>Plan: Recorded</span>
-            <span className="text-emerald-700 font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Ready
-            </span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Quick Action Navigation Panels */}
@@ -243,32 +282,36 @@ export const BeforeDashboardView: React.FC<BeforeDashboardViewProps> = ({
         {/* Panel 1: Preparedness Action Roadmap */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#C8D9E6]/60 shadow-sm">
           <h3 className="text-lg font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] mb-1">
-            Household Preparedness Checklist
+            {isAuthority ? 'Authority Preparedness Actions' : 'Household Preparedness Checklist'}
           </h3>
           <p className="text-xs text-[#567C8D] mb-6">
-            Ensure your family's evacuation plan is updated before the disaster onset.
+            {isAuthority
+              ? 'Review safe shelter information and monitor building occupancy.'
+              : "Ensure your family's evacuation plan is updated before the disaster onset."}
           </p>
 
           <div className="space-y-3">
-            <div
-              onClick={() => onNavigateTab('household')}
-              className="p-4 rounded-2xl bg-[#F5EFEB]/60 hover:bg-[#F5EFEB] border border-[#C8D9E6]/40 flex items-center justify-between cursor-pointer transition"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[#2F4156] shadow-sm">
-                  <Users className="w-4 h-4" />
+            {!isAuthority && (
+              <div
+                onClick={() => onNavigateTab('household')}
+                className="p-4 rounded-2xl bg-[#F5EFEB]/60 hover:bg-[#F5EFEB] border border-[#C8D9E6]/40 flex items-center justify-between cursor-pointer transition"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[#2F4156] shadow-sm">
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[#2F4156]">
+                      1. Review Household Members & Plans
+                    </h4>
+                    <p className="text-[11px] text-[#567C8D]">
+                      Set expected location (Home, Shelter, Other City) for each person
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-[#2F4156]">
-                    1. Review Household Members & Plans
-                  </h4>
-                  <p className="text-[11px] text-[#567C8D]">
-                    Set expected location (Home, Shelter, Other City) for each person
-                  </p>
-                </div>
+                <ChevronRight className="w-4 h-4 text-[#567C8D]" />
               </div>
-              <ChevronRight className="w-4 h-4 text-[#567C8D]" />
-            </div>
+            )}
 
             <div
               onClick={() => onNavigateTab('shelters')}
@@ -280,35 +323,59 @@ export const BeforeDashboardView: React.FC<BeforeDashboardViewProps> = ({
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-[#2F4156]">
-                    2. Check Designated Shelter Capacities
+                    {isAuthority ? '1. Review Shelter Information & Capacities' : '2. Check Designated Shelter Capacities'}
                   </h4>
                   <p className="text-[11px] text-[#567C8D]">
-                    Find safe shelters with available beds before they become full
+                    {isAuthority
+                      ? 'Review safe shelter capacities, operational status, and available beds'
+                      : 'Find safe shelters with available beds before they become full'}
                   </p>
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-[#567C8D]" />
             </div>
 
-            <div
-              onClick={() => onNavigateTab('reconfirmation')}
-              className="p-4 rounded-2xl bg-[#F5EFEB]/60 hover:bg-[#F5EFEB] border border-[#C8D9E6]/40 flex items-center justify-between cursor-pointer transition"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[#2F4156] shadow-sm">
-                  <CheckCircle2 className="w-4 h-4" />
+            {!isAuthority ? (
+              <div
+                onClick={() => onNavigateTab('reconfirmation')}
+                className="p-4 rounded-2xl bg-[#F5EFEB]/60 hover:bg-[#F5EFEB] border border-[#C8D9E6]/40 flex items-center justify-between cursor-pointer transition"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[#2F4156] shadow-sm">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[#2F4156]">
+                      3. Reconfirm 30-Hour Location Status
+                    </h4>
+                    <p className="text-[11px] text-[#567C8D]">
+                      Validate that your emergency intentions have not changed
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-[#2F4156]">
-                    3. Reconfirm 30-Hour Location Status
-                  </h4>
-                  <p className="text-[11px] text-[#567C8D]">
-                    Validate that your emergency intentions have not changed
-                  </p>
-                </div>
+                <ChevronRight className="w-4 h-4 text-[#567C8D]" />
               </div>
-              <ChevronRight className="w-4 h-4 text-[#567C8D]" />
-            </div>
+            ) : (
+              <div
+                onClick={() => onNavigateTab('occupancy')}
+                className="p-4 rounded-2xl bg-[#F5EFEB]/60 hover:bg-[#F5EFEB] border border-[#C8D9E6]/40 flex items-center justify-between cursor-pointer transition"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center text-[#2F4156] shadow-sm">
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[#2F4156]">
+                      2. Inspect Expected Building Occupancy
+                    </h4>
+                    <p className="text-[11px] text-[#567C8D]">
+                      Monitor structural census, population distribution, and shelter demand
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#567C8D]" />
+              </div>
+            )}
           </div>
         </div>
 
@@ -351,7 +418,9 @@ export const BeforeDashboardView: React.FC<BeforeDashboardViewProps> = ({
 
               <div>
                 <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                  <span className="text-[#2F4156]">Community Reconfirmation Response</span>
+                  <span className="text-[#2F4156]">
+                    {isAuthority ? 'Community Evacuation Readiness' : 'Community Reconfirmation Response'}
+                  </span>
                   <span className="text-[#567C8D] font-bold">78% Verified</span>
                 </div>
                 <div className="w-full h-2.5 rounded-full bg-[#F5EFEB] overflow-hidden">

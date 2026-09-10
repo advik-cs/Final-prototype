@@ -56,9 +56,24 @@ export const ShelterSelectionView: React.FC<ShelterSelectionViewProps> = ({
         ]);
         setShelters(sList);
         setHousehold(hh);
+      } else {
+        const [sList, hh] = await Promise.all([
+          shelterService.getShelters().catch(() => []),
+          householdService.getMyHousehold().catch(() => null),
+        ]);
+        setShelters(
+          sList.map((s) => ({
+            ...s,
+            expectedArrivals: 0,
+            remainingCapacity: s.capacity,
+            occupancyPercentage: 0,
+            status: (s.status as any) || 'AVAILABLE',
+          }))
+        );
+        setHousehold(hh);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Error loading shelters in ShelterSelectionView:', e);
     } finally {
       setLoading(false);
     }
@@ -70,8 +85,8 @@ export const ShelterSelectionView: React.FC<ShelterSelectionViewProps> = ({
     try {
       // Set all household members to this shelter
       const payload = household.members.map((m) => ({
-        memberId: m.id,
-        expectedType: 'SHELTER' as const,
+        householdMemberId: m.id,
+        expectedLocationType: 'SHELTER' as const,
         shelterId,
       }));
 
@@ -115,6 +130,9 @@ export const ShelterSelectionView: React.FC<ShelterSelectionViewProps> = ({
 
   const filteredShelters = shelters.filter((s) => {
     if (statusFilter === 'ALL') return true;
+    if (statusFilter === 'OVER_CAPACITY') {
+      return s.status === 'OVER_CAPACITY' || s.status === 'FULL';
+    }
     return s.status === statusFilter;
   });
 
@@ -157,10 +175,12 @@ export const ShelterSelectionView: React.FC<ShelterSelectionViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] tracking-tight">
-            Designated Safe Shelters
+            {user.role === 'AUTHORITY' ? 'Shelter Information' : 'Designated Safe Shelters'}
           </h1>
           <p className="text-sm font-medium text-[#567C8D] mt-1">
-            Real-time expected arrivals and dynamic remaining capacity calculations.
+            {user.role === 'AUTHORITY'
+              ? 'Real-time shelter capacities, operational status, and remaining capacity calculations.'
+              : 'Real-time expected arrivals and dynamic remaining capacity calculations.'}
           </p>
         </div>
 
@@ -197,129 +217,154 @@ export const ShelterSelectionView: React.FC<ShelterSelectionViewProps> = ({
       </div>
 
       {/* Shelter Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredShelters.map((shelter) => {
-          const isOverCapacity = shelter.status === 'OVER_CAPACITY' || shelter.remainingCapacity < 0;
-          const isNearCapacity = shelter.status === 'NEAR_CAPACITY';
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-[#C8D9E6]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#567C8D] mb-2" />
+          <p className="text-xs font-semibold text-[#567C8D]">Loading designated shelters...</p>
+        </div>
+      ) : filteredShelters.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-3xl border border-[#C8D9E6] p-8">
+          <Tent className="w-12 h-12 text-[#567C8D] mx-auto mb-3 opacity-40" />
+          <h3 className="text-lg font-bold text-[#2F4156]">No shelters found</h3>
+          <p className="text-xs text-[#567C8D] mt-1">
+            {statusFilter === 'ALL'
+              ? 'No registered shelters in this region.'
+              : `No shelters currently marked as ${statusFilter.replace('_', ' ')}.`}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredShelters.map((shelter) => {
+            const isOverCapacity = shelter.status === 'OVER_CAPACITY' || shelter.remainingCapacity < 0;
+            const isNearCapacity = shelter.status === 'NEAR_CAPACITY';
 
-          return (
-            <div
-              key={shelter.id}
-              className={`bg-white rounded-3xl p-6 border shadow-sm hover:shadow-md transition flex flex-col justify-between ${
-                isOverCapacity
-                  ? 'border-red-300 ring-1 ring-red-200'
-                  : isNearCapacity
-                  ? 'border-amber-300'
-                  : 'border-[#C8D9E6]/70'
-              }`}
-            >
-              <div>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="w-11 h-11 rounded-2xl bg-[#567C8D]/15 flex items-center justify-center text-[#2F4156] flex-shrink-0">
-                    <Tent className="w-5 h-5" />
-                  </div>
-                  {getStatusBadge(shelter.status)}
-                </div>
-
-                <h3 className="text-base font-bold text-[#2F4156] mt-4 leading-tight">
-                  {shelter.name}
-                </h3>
-                <p className="text-xs text-[#567C8D] mt-1 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-[#567C8D]" />
-                  <span>{shelter.address}</span>
-                </p>
-
-                {/* Capacity Progress Bar */}
-                <div className="mt-5 space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold">
-                    <span className="text-[#567C8D]">Occupancy Trend</span>
-                    <span
-                      className={
-                        isOverCapacity
-                          ? 'text-red-600'
-                          : isNearCapacity
-                          ? 'text-amber-600'
-                          : 'text-[#2F4156]'
-                      }
-                    >
-                      {shelter.expectedArrivals} / {shelter.capacity} ({shelter.occupancyPercentage}%)
-                    </span>
+            return (
+              <div
+                key={shelter.id}
+                className={`bg-white rounded-3xl p-6 border shadow-sm hover:shadow-md transition flex flex-col justify-between ${
+                  isOverCapacity
+                    ? 'border-red-300 ring-1 ring-red-200'
+                    : isNearCapacity
+                    ? 'border-amber-300'
+                    : 'border-[#C8D9E6]/70'
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="w-11 h-11 rounded-2xl bg-[#567C8D]/15 flex items-center justify-center text-[#2F4156] flex-shrink-0">
+                      <Tent className="w-5 h-5" />
+                    </div>
+                    {getStatusBadge(shelter.status)}
                   </div>
 
-                  <div className="w-full h-3 rounded-full bg-[#F5EFEB] overflow-hidden">
+                  <h3 className="text-base font-bold text-[#2F4156] mt-4 leading-tight">
+                    {shelter.name}
+                  </h3>
+                  <p className="text-xs text-[#567C8D] mt-1 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-[#567C8D]" />
+                    <span>{shelter.address}</span>
+                  </p>
+
+                  {/* Capacity Progress Bar */}
+                  <div className="mt-5 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-[#567C8D]">Occupancy Trend</span>
+                      <span
+                        className={
+                          isOverCapacity
+                            ? 'text-red-600'
+                            : isNearCapacity
+                            ? 'text-amber-700'
+                            : 'text-emerald-700'
+                        }
+                      >
+                        {Math.min(100, Math.round(shelter.occupancyPercentage))}% Full
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 rounded-full bg-[#F5EFEB] overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isOverCapacity
+                            ? 'bg-red-600'
+                            : isNearCapacity
+                            ? 'bg-amber-500'
+                            : 'bg-emerald-600'
+                        }`}
+                        style={{
+                          width: `${Math.min(100, Math.max(0, shelter.occupancyPercentage))}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Capacity & Arrivals Grid */}
+                  <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-[#F5EFEB] text-center">
+                    <div className="p-2 rounded-xl bg-[#F5EFEB]/50">
+                      <span className="text-[10px] font-extrabold uppercase text-[#567C8D] block">
+                        Total Cap
+                      </span>
+                      <span className="text-sm font-bold text-[#2F4156]">
+                        {shelter.capacity}
+                      </span>
+                    </div>
+
+                    <div className="p-2 rounded-xl bg-[#F5EFEB]/50">
+                      <span className="text-[10px] font-extrabold uppercase text-[#567C8D] block">
+                        Expected
+                      </span>
+                      <span className="text-sm font-bold text-[#2F4156]">
+                        {shelter.expectedArrivals}
+                      </span>
+                    </div>
+
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${
+                      className={`p-2 rounded-xl ${
                         isOverCapacity
-                          ? 'bg-red-500'
+                          ? 'bg-red-50 text-red-700'
                           : isNearCapacity
-                          ? 'bg-amber-500'
-                          : 'bg-emerald-500'
-                      }`}
-                      style={{
-                        width: `${Math.min(100, shelter.occupancyPercentage)}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Metrics Breakdown */}
-                <div className="mt-5 grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-[#F5EFEB]/70 border border-[#C8D9E6]/40 text-center">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-[#567C8D]">
-                      Expected Arrivals
-                    </span>
-                    <p className="text-lg font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] mt-0.5">
-                      {shelter.expectedArrivals}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-[#567C8D]">
-                      Remaining Safe Beds
-                    </span>
-                    <p
-                      className={`text-lg font-bold font-['Space_Grotesk',sans-serif] mt-0.5 ${
-                        shelter.remainingCapacity < 0
-                          ? 'text-red-600'
-                          : shelter.remainingCapacity <= 3
-                          ? 'text-amber-600'
-                          : 'text-emerald-700'
+                          ? 'bg-amber-50 text-amber-800'
+                          : 'bg-emerald-50 text-emerald-800'
                       }`}
                     >
-                      {shelter.remainingCapacity}
-                    </p>
+                      <span className="text-[10px] font-extrabold uppercase block opacity-80">
+                        Remaining
+                      </span>
+                      <span className="text-sm font-bold">
+                        {shelter.remainingCapacity < 0 ? 'NIL' : shelter.remainingCapacity}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Action Button: Citizen select for family */}
-              <div className="mt-6 pt-4 border-t border-[#F5EFEB] space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-[#567C8D]">
-                  <span className="flex items-center gap-1">
-                    <Phone className="w-3 h-3" />
-                    {shelter.contactNumber}
-                  </span>
+                <div className="mt-6 pt-4 border-t border-[#F5EFEB]">
+                  <div className="flex items-center justify-between text-xs text-[#567C8D] mb-3">
+                    <span className="flex items-center gap-1 font-medium">
+                      <Phone className="w-3.5 h-3.5 text-[#567C8D]" />
+                      <span>{shelter.contactNumber}</span>
+                    </span>
+                  </div>
+
+                  {user.role === 'CITIZEN' && (
+                    <button
+                      type="button"
+                      disabled={assigningShelterId === shelter.id}
+                      onClick={() => handleSelectShelterForHousehold(shelter.id)}
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#2F4156] hover:bg-[#1F2D3D] text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+                    >
+                      {assigningShelterId === shelter.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C8D9E6]" />
+                      ) : (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#C8D9E6]" />
+                      )}
+                      <span>Select for Entire Family</span>
+                    </button>
+                  )}
                 </div>
-
-                {user.role === 'CITIZEN' && (
-                  <button
-                    type="button"
-                    disabled={assigningShelterId === shelter.id}
-                    onClick={() => handleSelectShelterForHousehold(shelter.id)}
-                    className="w-full py-2.5 px-4 rounded-xl bg-[#2F4156] hover:bg-[#1F2D3D] text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
-                  >
-                    {assigningShelterId === shelter.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C8D9E6]" />
-                    ) : (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#C8D9E6]" />
-                    )}
-                    <span>Select for Entire Family</span>
-                  </button>
-                )}
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Add Shelter Modal (for Rescuer) */}
       {showAddModal && (

@@ -7,7 +7,19 @@
   },
   "rewrites": [
     {
-      "source": "/((?!api($|/)).*)",
+      "source": "/before",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/during",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/floodx",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard",
       "destination": "/index.html"
     }
   ]

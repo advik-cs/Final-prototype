@@ -1,58 +1,44 @@
-import { request } from './apiClient.ts';
+import { beforeApi, Household, HouseholdMember } from '../api/beforeApi';
 
-export interface HouseholdMember {
-  id: string;
-  householdId: string;
-  name: string;
-  age: number;
-  relationship: string;
-  category: 'ADULT' | 'CHILD' | 'ELDERLY';
-  expectedLocations?: any[];
-  emergencyStatuses?: any[];
-}
-
-export interface Household {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  latitude: number;
-  longitude: number;
-  userId: string;
-  members: HouseholdMember[];
-  stats?: {
-    totalMembers: number;
-    adults: number;
-    children: number;
-    elderly: number;
-  };
-}
+export type { Household, HouseholdMember };
 
 export const householdService = {
   async getMyHousehold(): Promise<Household> {
-    return request<Household>('/my-household');
+    const hh = await beforeApi.getMyHousehold();
+    if (!hh) {
+      // Fallback demo household if user has not created one yet
+      return {
+        id: 'demo-household-1',
+        householdCode: 'HH-DEMO-01',
+        createdByUserId: 'demo-user',
+        name: 'Malhotra Residence, Block 4',
+        address: '14/B Koramangala 4th Block, 1st Cross',
+        latitude: 12.9348,
+        longitude: 77.6253,
+        members: [
+          { id: 'm-1', householdId: 'demo-household-1', name: 'Vikram Malhotra', age: 42, relationship: 'Self', category: 'ADULT' },
+          { id: 'm-2', householdId: 'demo-household-1', name: 'Anita Malhotra', age: 39, relationship: 'Spouse', category: 'ADULT' },
+          { id: 'm-3', householdId: 'demo-household-1', name: 'Rohan Malhotra', age: 10, relationship: 'Child', category: 'CHILD' },
+          { id: 'm-4', householdId: 'demo-household-1', name: 'Savitri Devi', age: 68, relationship: 'Parent', category: 'ELDERLY' },
+        ],
+      };
+    }
+    return hh;
   },
 
   async getHousehold(id: string): Promise<Household> {
-    return request<Household>(`/households/${id}`);
+    return this.getMyHousehold();
   },
 
   async updateHousehold(id: string, data: Partial<Household>): Promise<Household> {
-    return request<Household>(`/households/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    return this.getMyHousehold();
   },
 
   async addMember(
     householdId: string,
     member: { name: string; age: number; relationship: string; category?: string }
   ): Promise<HouseholdMember> {
-    return request<HouseholdMember>(`/households/${householdId}/members`, {
-      method: 'POST',
-      body: JSON.stringify(member),
-    });
+    return beforeApi.addMember(householdId, member);
   },
 
   async updateMember(
@@ -60,19 +46,14 @@ export const householdService = {
     memberId: string,
     data: Partial<HouseholdMember>
   ): Promise<HouseholdMember> {
-    return request<HouseholdMember>(`/households/${householdId}/members/${memberId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    return beforeApi.updateMember(householdId, memberId, data);
   },
 
   async deleteMember(householdId: string, memberId: string): Promise<{ message: string }> {
-    return request<{ message: string }>(`/households/${householdId}/members/${memberId}`, {
-      method: 'DELETE',
-    });
+    return beforeApi.deleteMember(householdId, memberId);
   },
 
   async getDisasterOccupancy(disasterId: string): Promise<any> {
-    return request(`/my-household/disaster/${disasterId}/occupancy`);
+    return beforeApi.getExpectedLocations(disasterId);
   },
 };

@@ -8,6 +8,10 @@ export interface EmergencyFacility {
   latitude: number;
   longitude: number;
   contactNumber: string;
+  emergencyContact?: string;
+  emergencyContactIsDemo?: boolean;
+  phone?: string | null;
+  source?: string;
 }
 
 export const facilityService = {

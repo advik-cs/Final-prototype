@@ -1,4 +1,6 @@
-import { request } from './apiClient.ts';
+import { beforeApi, DisasterEvent, BuildingIntelligence } from '../api/beforeApi';
+
+export type { DisasterEvent, BuildingIntelligence };
 
 export interface AffectedZone {
   id: string;
@@ -9,118 +11,92 @@ export interface AffectedZone {
   radiusKm: number;
 }
 
-export interface DisasterEvent {
-  id: string;
-  type: 'FLOOD' | 'CYCLONE' | 'EARTHQUAKE' | 'LANDSLIDE' | 'OTHER';
-  title: string;
-  description: string;
-  alertLevel: 'GREEN' | 'YELLOW' | 'ORANGE' | 'RED';
-  predictedStartTime: string;
-  predictedEndTime: string;
-  status: 'PREDICTED' | 'ACTIVE' | 'ENDED' | 'CANCELLED';
-  createdById?: string;
-  affectedZones?: AffectedZone[];
-}
-
-export interface BuildingIntelligence {
-  buildingName: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-  isAffected: boolean;
-  riskLevel: string;
-  zoneName: string;
-  registeredPopulation: number;
-  adults: number;
-  children: number;
-  elderly: number;
-  expectedHome: number;
-  expectedShelter: number;
-  expectedElsewhere: number;
-  unknown: number;
-  expectedOccupancy: number;
-  confirmedSafe: number;
-  inDistress: number;
-  unaccounted: number;
-  activeRequests: any[];
-}
-
 export const disasterService = {
   async getDisasters(): Promise<DisasterEvent[]> {
-    return request<DisasterEvent[]>('/disasters');
+    return beforeApi.getDisasters();
   },
 
   async getDisasterById(id: string): Promise<DisasterEvent> {
-    return request<DisasterEvent>(`/disasters/${id}`);
+    return beforeApi.getDisasterById(id);
   },
 
   async createDisaster(data: Partial<DisasterEvent>): Promise<DisasterEvent> {
-    return request<DisasterEvent>('/disasters', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return beforeApi.createDisaster(data);
   },
 
   async updateDisaster(id: string, data: Partial<DisasterEvent>): Promise<DisasterEvent> {
-    return request<DisasterEvent>(`/disasters/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    return beforeApi.createDisaster({ ...data, id });
   },
 
   async getAffectedZones(disasterId: string): Promise<AffectedZone[]> {
-    return request<AffectedZone[]>(`/disasters/${disasterId}/zones`);
+    const list = await beforeApi.getZones(disasterId);
+    return (list || []).map((z: any) => ({
+      id: z.id,
+      disasterId: z.disasterEventId || disasterId,
+      name: z.name,
+      riskLevel: z.alertLevel || z.riskLevel || 'HIGH',
+      polygonGeoJson: typeof z.boundaryCoordinates === 'string' ? z.boundaryCoordinates : JSON.stringify(z.boundaryCoordinates || []),
+      radiusKm: z.radiusKm || 5.0,
+    }));
   },
 
   async addAffectedZone(disasterId: string, data: Partial<AffectedZone>): Promise<AffectedZone> {
-    return request<AffectedZone>(`/disasters/${disasterId}/zones`, {
-      method: 'POST',
-      body: JSON.stringify(data),
+    const res = await beforeApi.addZone(disasterId, {
+      name: data.name,
+      alertLevel: data.riskLevel || 'HIGH',
+      boundaryCoordinates: data.polygonGeoJson ? JSON.parse(data.polygonGeoJson) : [],
     });
+    return {
+      id: res.id,
+      disasterId,
+      name: res.name,
+      riskLevel: res.alertLevel || 'HIGH',
+      polygonGeoJson: data.polygonGeoJson || '[]',
+      radiusKm: 5.0,
+    };
   },
 
   async getAffectedHouseholds(disasterId: string): Promise<any[]> {
-    return request<any[]>(`/disasters/${disasterId}/affected-households`);
+    return beforeApi.getZoneSummary(disasterId);
   },
 
   async setExpectedLocations(
     disasterId: string,
     locations: Array<{
-      memberId: string;
-      expectedType: 'HOME' | 'SHELTER' | 'OTHER_CITY' | 'UNKNOWN';
+      householdMemberId?: string;
+      memberId?: string;
+      expectedLocationType?: 'HOME' | 'SHELTER' | 'OTHER_CITY' | 'UNKNOWN';
+      expectedType?: 'HOME' | 'SHELTER' | 'OTHER_CITY' | 'UNKNOWN';
       shelterId?: string | null;
       otherCity?: string | null;
     }>
   ): Promise<any> {
-    return request(`/disasters/${disasterId}/expected-locations`, {
-      method: 'POST',
-      body: JSON.stringify({ locations }),
-    });
+    return beforeApi.setExpectedLocations(disasterId, locations);
   },
 
   async getExpectedLocations(disasterId: string): Promise<any[]> {
-    return request<any[]>(`/disasters/${disasterId}/expected-locations`);
+    return beforeApi.getExpectedLocations(disasterId);
   },
 
   async getBuildingIntelligence(disasterId: string): Promise<BuildingIntelligence[]> {
-    return request<BuildingIntelligence[]>(`/disasters/${disasterId}/buildings`);
+    return beforeApi.getBuildingIntelligence(disasterId);
   },
 
   async getZoneSummary(disasterId: string): Promise<any> {
-    return request(`/disasters/${disasterId}/zone-summary`);
+    return beforeApi.getZoneSummary(disasterId);
   },
 
   async submitReconfirmation(
     disasterId: string,
-    choice: 'SAME_PLAN' | 'CHANGE_LOCATION' | 'NOT_SURE'
+    payload: any
   ): Promise<any> {
-    return request(`/disasters/${disasterId}/reconfirm`, {
-      method: 'POST',
-      body: JSON.stringify({ choice }),
-    });
+    return beforeApi.submitReconfirmation(disasterId, payload);
   },
 
-  async getReconfirmationStatus(disasterId: string): Promise<any> {
-    return request(`/disasters/${disasterId}/reconfirmation-status`);
+  async getReconfirmationStatus(disasterId: string, role?: string): Promise<any> {
+    if (role === 'RESCUER') {
+      return beforeApi.getReconfirmationsStatus(disasterId);
+    }
+    return beforeApi.getMyReconfirmationStatus(disasterId);
   },
 };

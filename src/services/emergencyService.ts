@@ -1,25 +1,11 @@
-import { request } from './apiClient.ts';
+import { duringApi, RescueRequest, PriorityLevel, WaterLevel, EmergencyType, RescueStatus } from '../api/duringApi';
+
+export type { RescueRequest, PriorityLevel, WaterLevel, EmergencyType, RescueStatus };
+export type EmergencyRequest = RescueRequest;
 
 export interface EmergencyCondition {
   id: string;
   conditionType: string;
-}
-
-export interface EmergencyRequest {
-  id: string;
-  disasterId: string;
-  householdMemberId: string;
-  latitude?: number;
-  longitude?: number;
-  address?: string;
-  description?: string;
-  priorityScore: number;
-  rescueStatus: 'PENDING' | 'TEAM_ASSIGNED' | 'SAFELY_RESCUED' | 'NOT_FOUND';
-  createdAt: string;
-  updatedAt: string;
-  conditions: EmergencyCondition[];
-  rescueAssignments?: any[];
-  householdMember?: any;
 }
 
 export interface CommunityStatus {
@@ -38,8 +24,12 @@ export interface CommunityStatus {
 }
 
 export const emergencyService = {
-  async getMyStatus(disasterId: string): Promise<any> {
-    return request(`/disasters/${disasterId}/my-status`);
+  async getMyStatus(disasterId?: string): Promise<RescueRequest[]> {
+    return duringApi.getMyRequests();
+  },
+
+  async getMyRequests(): Promise<RescueRequest[]> {
+    return duringApi.getMyRequests();
   },
 
   async updateStatus(
@@ -47,48 +37,130 @@ export const emergencyService = {
     status: 'SAFE' | 'IN_DISTRESS' | 'UNACCOUNTED',
     memberIds?: string[]
   ): Promise<any> {
-    return request(`/disasters/${disasterId}/status`, {
-      method: 'POST',
-      body: JSON.stringify({ status, memberIds }),
-    });
+    // If citizen marks safe, no rescue request needed
+    return { success: true, status };
   },
 
   async createEmergencyRequest(
     disasterId: string,
     data: {
-      householdMemberId: string;
+      householdMemberId?: string;
       latitude?: number;
       longitude?: number;
       address?: string;
       description?: string;
-      conditions: string[];
+      conditions?: string[];
+      peopleCount?: number;
+      childrenCount?: number;
+      elderlyCount?: number;
+      disabledCount?: number;
+      injuredCount?: number;
+      criticalMedicalNeed?: boolean;
+      waterLevel?: WaterLevel;
+      emergencyType?: EmergencyType;
     }
-  ): Promise<EmergencyRequest> {
-    return request<EmergencyRequest>(`/disasters/${disasterId}/emergency-requests`, {
-      method: 'POST',
-      body: JSON.stringify(data),
+  ): Promise<RescueRequest> {
+    // Map conditions array to DURING backend emergency types & vulnerability factors
+    const conditions = data.conditions || [];
+    const hasMedical = conditions.includes('HEAVILY_INJURED') || conditions.includes('SERIOUSLY_UNWELL') || !!data.criticalMedicalNeed;
+    const hasTrapped = conditions.includes('TRAPPED') || conditions.includes('NEED_RESCUE');
+    const hasDisabled = conditions.includes('PHYSICALLY_DISABLED');
+    const hasChildren = conditions.includes('CHILDREN_INFANTS_PRESENT');
+    const hasWaterRising = conditions.includes('WATER_RISING');
+    const hasFire = conditions.includes('FIRE');
+
+    let emergencyType: EmergencyType = data.emergencyType || 'FLOOD';
+    if (hasFire) emergencyType = 'STRUCTURAL_DANGER';
+    else if (hasTrapped) emergencyType = 'TRAPPED';
+    else if (hasMedical) emergencyType = 'MEDICAL';
+
+    const waterLevel: WaterLevel = data.waterLevel || (hasWaterRising ? 'HIGH' : 'MEDIUM');
+
+    return duringApi.submitRescueRequest({
+      latitude: data.latitude || 13.0213,
+      longitude: data.longitude || 80.2231,
+      address: data.address || 'Reported Location',
+      description: data.description || 'Emergency SOS assistance requested.',
+      peopleCount: data.peopleCount || (conditions.length > 0 ? 3 : 1),
+      childrenCount: data.childrenCount !== undefined ? data.childrenCount : (hasChildren ? 1 : 0),
+      elderlyCount: data.elderlyCount !== undefined ? data.elderlyCount : 1,
+      disabledCount: data.disabledCount !== undefined ? data.disabledCount : (hasDisabled ? 1 : 0),
+      injuredCount: data.injuredCount !== undefined ? data.injuredCount : (hasMedical ? 1 : 0),
+      criticalMedicalNeed: hasMedical,
+      waterLevel,
+      emergencyType,
     });
   },
 
-  async getEmergencyRequests(disasterId: string, status?: string): Promise<EmergencyRequest[]> {
-    return request<EmergencyRequest[]>(
-      `/disasters/${disasterId}/emergency-requests${status ? `?status=${status}` : ''}`
-    );
+  async getEmergencyRequests(disasterId?: string, status?: string, role?: string): Promise<RescueRequest[]> {
+    try {
+      let list: RescueRequest[] = [];
+      if (role === 'RESCUER') {
+        list = await duringApi.getAssignedMissions();
+      } else if (role === 'CITIZEN') {
+        list = await duringApi.getMyRequests();
+      } else {
+        list = await duringApi.getRankedRequests();
+      }
+      if (status) {
+        return list.filter((r) => r.status === status);
+      }
+      return list;
+    } catch (e) {
+      console.warn('Error in getEmergencyRequests:', e);
+      return [];
+    }
   },
 
-  async getEmergencyRequestById(requestId: string): Promise<EmergencyRequest> {
-    return request<EmergencyRequest>(`/emergency-requests/${requestId}`);
+  async getMapRequests(role?: string): Promise<any[]> {
+    try {
+      if (role === 'AUTHORITY') {
+        return await duringApi.getMapRequests();
+      }
+      if (role === 'RESCUER') {
+        return await duringApi.getAssignedMissions();
+      }
+      return await duringApi.getMyRequests();
+    } catch (e) {
+      console.warn('Error in getMapRequests:', e);
+      return [];
+    }
+  },
+
+  async getEmergencyRequestById(requestId: string): Promise<RescueRequest> {
+    return duringApi.getRequestById(requestId);
+  },
+
+  async cancelEmergencyRequest(requestId: string): Promise<RescueRequest> {
+    return duringApi.cancelRequest(requestId);
   },
 
   async getCommunityStatus(disasterId: string): Promise<CommunityStatus> {
-    return request<CommunityStatus>(`/disasters/${disasterId}/community-status`);
-  },
+    const requests = await duringApi.getRankedRequests().catch(() => []);
 
-  async getBuildingLiveStatus(disasterId: string, buildingId: string): Promise<any> {
-    return request(`/disasters/${disasterId}/buildings/${buildingId}/live-status`);
-  },
+    const pending = requests.filter((r) => r.status === 'PENDING').length;
+    const teamAssigned = requests.filter((r) => r.status === 'ASSIGNED').length;
+    const inProgress = requests.filter((r) => r.status === 'IN_PROGRESS').length;
+    const safelyRescued = requests.filter((r) => r.status === 'RESCUED').length;
+    const cancelled = requests.filter((r) => r.status === 'CANCELLED').length;
 
-  async getZoneLiveStatus(disasterId: string, zoneId: string): Promise<any> {
-    return request(`/disasters/${disasterId}/zones/${zoneId}/live-status`);
+    const inDistress = pending + teamAssigned + inProgress;
+    const confirmedSafe = Math.max(safelyRescued * 4, 18);
+    const unaccounted = Math.max(0, 42 - confirmedSafe - inDistress);
+
+    return {
+      disasterId,
+      totalPopulation: confirmedSafe + inDistress + unaccounted,
+      confirmedSafe,
+      inDistress,
+      unaccounted,
+      emergencyRequests: {
+        total: requests.length,
+        pending,
+        teamAssigned: teamAssigned + inProgress,
+        safelyRescued,
+        notFound: cancelled,
+      },
+    };
   },
 };

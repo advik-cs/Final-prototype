@@ -1,13 +1,6 @@
-import { request } from './apiClient.ts';
+import { authApi, UnifiedUser, UserRole } from '../api/authApi';
 
-export interface User {
-  id: string;
-  name: string;
-  testIdentityNumber: string;
-  mobileNumber: string;
-  role: 'CITIZEN' | 'RESCUER';
-  households?: any[];
-}
+export type User = UnifiedUser;
 
 export interface AuthResponse {
   token: string;
@@ -17,17 +10,11 @@ export interface AuthResponse {
 
 export const authService = {
   getStoredUser(): User | null {
-    try {
-      const u = localStorage.getItem('stride_user');
-      return u ? JSON.parse(u) : null;
-    } catch {
-      return null;
-    }
+    return authApi.getStoredUser();
   },
 
   logout(): void {
-    localStorage.removeItem('stride_token');
-    localStorage.removeItem('stride_user');
+    authApi.logout();
   },
 
   async signup(data: {
@@ -35,20 +22,16 @@ export const authService = {
     testIdentityNumber: string;
     mobileNumber: string;
     password?: string;
-    role?: 'CITIZEN' | 'RESCUER';
+    role?: UserRole;
   }): Promise<AuthResponse> {
-    const res = await request<AuthResponse>('/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({
-        ...data,
-        password: data.password || 'stride123',
-      }),
+    const user = await authApi.loginCustom({
+      identifier: data.mobileNumber || data.testIdentityNumber,
+      name: data.name,
+      password: data.password,
+      role: data.role || 'CITIZEN',
     });
-    if (res.token) {
-      localStorage.setItem('stride_token', res.token);
-      localStorage.setItem('stride_user', JSON.stringify(res.user));
-    }
-    return res;
+    const token = localStorage.getItem('stride_token') || '';
+    return { token, user };
   },
 
   async login(data: {
@@ -56,23 +39,22 @@ export const authService = {
     mobileNumber?: string;
     name?: string;
     password?: string;
-    role?: 'CITIZEN' | 'RESCUER';
+    role?: UserRole;
   }): Promise<AuthResponse> {
-    const res = await request<AuthResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({
-        ...data,
-        password: data.password || 'stride123',
-      }),
+    const identifier = data.mobileNumber || data.testIdentityNumber || '9800000011';
+    const user = await authApi.loginCustom({
+      identifier,
+      name: data.name,
+      password: data.password,
+      role: data.role || 'CITIZEN',
     });
-    if (res.token) {
-      localStorage.setItem('stride_token', res.token);
-      localStorage.setItem('stride_user', JSON.stringify(res.user));
-    }
-    return res;
+    const token = localStorage.getItem('stride_token') || '';
+    return { token, user };
   },
 
   async getMe(): Promise<{ user: User }> {
-    return request<{ user: User }>('/auth/me');
+    const user = authApi.getStoredUser();
+    if (!user) throw new Error('Not authenticated');
+    return { user };
   },
 };

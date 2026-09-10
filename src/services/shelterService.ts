@@ -1,43 +1,21 @@
-import { request } from './apiClient.ts';
+import { beforeApi, Shelter, ShelterOccupancy } from '../api/beforeApi';
 
-export interface Shelter {
-  id: string;
-  name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-  capacity: number;
-  contactNumber: string;
-  status: 'ACTIVE' | 'NEAR_CAPACITY' | 'FULL' | 'CLOSED' | 'AVAILABLE' | 'OVER_CAPACITY';
-}
-
-export interface ShelterOccupancy extends Omit<Shelter, 'status'> {
-  expectedArrivals: number;
-  remainingCapacity: number;
-  occupancyPercentage: number;
-  status: 'AVAILABLE' | 'NEAR_CAPACITY' | 'FULL' | 'OVER_CAPACITY' | 'ACTIVE' | 'CLOSED';
-}
+export type { Shelter, ShelterOccupancy };
 
 export const shelterService = {
   async getShelters(): Promise<Shelter[]> {
-    return request<Shelter[]>('/shelters');
+    return beforeApi.getShelters();
   },
 
   async getShelterOccupancy(disasterId: string): Promise<ShelterOccupancy[]> {
-    return request<ShelterOccupancy[]>(`/disasters/${disasterId}/shelter-occupancy`);
+    return beforeApi.getShelterOccupancy(disasterId);
   },
 
   async createShelter(data: Partial<Shelter>): Promise<Shelter> {
-    return request<Shelter>('/shelters', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    return beforeApi.createShelter(data);
   },
 
   async updateShelter(id: string, data: Partial<Shelter>): Promise<Shelter> {
-    return request<Shelter>(`/shelters/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
+    return beforeApi.updateShelter(id, data);
   },
 };

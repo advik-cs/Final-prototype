@@ -1,25 +1,32 @@
-import { request } from './apiClient.ts';
+import { beforeApi } from '../api/beforeApi';
 
 export interface NotificationItem {
   id: string;
   userId: string;
-  disasterId?: string;
-  type: 'DISASTER_ALERT' | 'EXPECTED_LOCATION_REQUEST' | 'RECONFIRMATION' | 'SHELTER_UPDATE';
+  type: string;
   message: string;
   status: 'UNREAD' | 'READ';
   createdAt: string;
-  readAt?: string;
-  disaster?: any;
 }
 
 export const notificationService = {
   async getNotifications(): Promise<NotificationItem[]> {
-    return request<NotificationItem[]>('/notifications');
+    try {
+      const list = await beforeApi.getNotifications();
+      return (list || []).map((n: any) => ({
+        id: n.id,
+        userId: n.userId,
+        type: n.type || 'DISASTER_ALERT',
+        message: n.message,
+        status: n.status || 'UNREAD',
+        createdAt: n.createdAt || new Date().toISOString(),
+      }));
+    } catch {
+      return [];
+    }
   },
 
-  async markAsRead(id: string): Promise<NotificationItem> {
-    return request<NotificationItem>(`/notifications/${id}/read`, {
-      method: 'PUT',
-    });
+  async markAsRead(id: string): Promise<any> {
+    return beforeApi.markNotificationRead(id);
   },
 };

@@ -90,6 +90,7 @@ export const DuringBuildingsView: React.FC<DuringBuildingsViewProps> = ({
             {(['ALL', 'DISTRESS', 'SAFE'] as const).map((mode) => (
               <button
                 key={mode}
+                id={`filter-buildings-${mode.toLowerCase()}`}
                 type="button"
                 onClick={() => setFilter(mode)}
                 className={`px-3 py-1.5 rounded-lg transition ${

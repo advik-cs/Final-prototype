@@ -64,11 +64,14 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
           const locs = await disasterService.getExpectedLocations(activeDisaster.id).catch(() => []);
           const map: Record<string, any> = {};
           locs.forEach((l: any) => {
-            map[l.householdMemberId] = {
-              type: l.expectedType,
-              shelterId: l.shelterId,
-              otherCity: l.otherCity,
-            };
+            const memberId = l.householdMemberId || l.memberId;
+            if (memberId) {
+              map[memberId] = {
+                type: l.expectedLocationType || l.expectedType || 'HOME',
+                shelterId: l.shelterId,
+                otherCity: l.otherCity,
+              };
+            }
           });
 
           // Fill defaults for members without record
@@ -90,15 +93,21 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
     memberId: string,
     type: 'HOME' | 'SHELTER' | 'OTHER_CITY' | 'UNKNOWN'
   ) => {
-    setExpectedLocationsMap((prev) => ({
-      ...prev,
-      [memberId]: {
-        ...prev[memberId],
-        type,
-        shelterId: type === 'SHELTER' ? prev[memberId]?.shelterId || shelters[0]?.id : undefined,
-        otherCity: type === 'OTHER_CITY' ? prev[memberId]?.otherCity || '' : undefined,
-      },
-    }));
+    setExpectedLocationsMap((prev) => {
+      const current = prev[memberId] || {};
+      const fallbackShelterId = current.shelterId || shelters[0]?.id;
+      const fallbackOtherCity = current.otherCity || 'Outside Affected Area';
+
+      return {
+        ...prev,
+        [memberId]: {
+          ...current,
+          type,
+          shelterId: type === 'SHELTER' ? fallbackShelterId : undefined,
+          otherCity: type === 'OTHER_CITY' ? fallbackOtherCity : undefined,
+        },
+      };
+    });
   };
 
   const handleShelterSelect = (memberId: string, shelterId: string) => {
@@ -124,22 +133,47 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
   };
 
   const handleSaveDisasterPlan = async () => {
-    if (!activeDisaster) return;
+    if (!activeDisaster || !household) return;
     setSavingPlan(true);
     setSaveSuccess(false);
     try {
-      const payload = Object.entries(expectedLocationsMap).map(([memberId, data]: [string, any]) => ({
-        memberId,
-        expectedType: data.type,
-        shelterId: data.type === 'SHELTER' ? data.shelterId : null,
-        otherCity: data.type === 'OTHER_CITY' ? data.otherCity : null,
-      }));
+      const plans = household.members.map((member) => {
+        const data = expectedLocationsMap[member.id] || { type: 'HOME' };
+        const rawType = data.type || 'HOME';
+        const expectedLocationType: 'HOME' | 'SHELTER' | 'OTHER_CITY' | 'UNKNOWN' =
+          rawType === 'NOT_SURE' ? 'UNKNOWN' : rawType;
 
-      await disasterService.setExpectedLocations(activeDisaster.id, payload);
+        const item: {
+          householdMemberId: string;
+          expectedLocationType: 'HOME' | 'SHELTER' | 'OTHER_CITY' | 'UNKNOWN';
+          shelterId?: string;
+          otherCity?: string;
+        } = {
+          householdMemberId: member.id,
+          expectedLocationType,
+        };
+
+        if (expectedLocationType === 'SHELTER') {
+          const chosenShelterId = data.shelterId || shelters[0]?.id;
+          if (!chosenShelterId) {
+            throw new Error(`Please select a designated shelter for ${member.name}.`);
+          }
+          item.shelterId = chosenShelterId;
+        } else if (expectedLocationType === 'OTHER_CITY') {
+          const city = (data.otherCity || '').trim() || 'Outside Affected Area';
+          item.otherCity = city;
+        }
+
+        return item;
+      });
+
+      console.log('[HouseholdMembersView] Saving disaster plans payload:', { plans });
+      await disasterService.setExpectedLocations(activeDisaster.id, plans);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {
-      alert('Failed to save disaster plans: ' + err.message);
+      console.error('[HouseholdMembersView] Save disaster plans error:', err);
+      alert('Failed to save disaster plans: ' + (err.message || err));
     } finally {
       setSavingPlan(false);
     }

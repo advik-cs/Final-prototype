@@ -20,9 +20,10 @@ import {
   UserCheck,
   ChevronRight,
   Sparkles,
+  Waves,
 } from 'lucide-react';
 
-export type DisasterMode = 'BEFORE' | 'DURING';
+export type DisasterMode = 'BEFORE' | 'DURING' | 'FLOODX';
 
 export type BeforeTab =
   | 'dashboard'
@@ -49,7 +50,7 @@ interface DashboardLayoutProps {
   onSelectBeforeTab: (tab: BeforeTab) => void;
   activeDuringTab: DuringTab;
   onSelectDuringTab: (tab: DuringTab) => void;
-  onSwitchRole: (newRole: 'CITIZEN' | 'RESCUER') => void;
+  onSwitchRole: (newRole: 'CITIZEN' | 'AUTHORITY' | 'RESCUER') => void;
   activeDisaster: DisasterEvent | null;
   onSelectDisaster: (disaster: DisasterEvent) => void;
   disasters: DisasterEvent[];
@@ -103,9 +104,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const beforeNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'map', label: 'Map', icon: MapIcon },
-    { id: 'household', label: 'Household Members', icon: Users },
-    { id: 'shelters', label: 'Shelter Selection', icon: Tent },
-    { id: 'reconfirmation', label: 'Reconfirmation', icon: CheckCircle2 },
+    ...(user.role !== 'AUTHORITY' ? [{ id: 'household', label: 'Household Members', icon: Users }] : []),
+    { id: 'shelters', label: user.role === 'AUTHORITY' ? 'Shelter Information' : 'Shelter Selection', icon: Tent },
+    ...(user.role !== 'AUTHORITY' ? [{ id: 'reconfirmation', label: 'Reconfirmation', icon: CheckCircle2 }] : []),
     { id: 'occupancy', label: 'Expected Occupancy', icon: Building2 },
     { id: 'threats', label: 'Predicted Threats', icon: AlertOctagon },
   ];
@@ -113,7 +114,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const duringNavItems = [
     { id: 'dashboard', label: 'Dashboard / Community', icon: LayoutDashboard },
     { id: 'safe', label: 'Are You Safe?', icon: LifeBuoy },
-    { id: 'buildings', label: 'Buildings', icon: Building2 },
+    ...(user.role !== 'CITIZEN' ? [{ id: 'buildings', label: 'Buildings', icon: Building2 }] : []),
     { id: 'maps', label: 'Maps', icon: MapIcon },
     { id: 'rescue', label: 'Rescue Status', icon: Radio },
   ];
@@ -129,12 +130,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         {/* Mode Selector Pill inside Sidebar */}
         <div className="p-4 border-b border-[#F5EFEB]">
-          <div className="p-1 rounded-xl bg-[#F5EFEB] flex items-center gap-1">
+          <div className="p-1 rounded-xl bg-[#F5EFEB] grid grid-cols-3 gap-1">
             <button
               id="sidebar-mode-before"
               type="button"
               onClick={() => onSwitchMode('BEFORE')}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-1.5 px-1 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
                 mode === 'BEFORE'
                   ? 'bg-white text-[#2F4156] shadow-sm'
                   : 'text-[#567C8D] hover:text-[#2F4156]'
@@ -146,13 +147,25 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               id="sidebar-mode-during"
               type="button"
               onClick={() => onSwitchMode('DURING')}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-1.5 px-1 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
                 mode === 'DURING'
                   ? 'bg-[#DC2626] text-white shadow-sm'
                   : 'text-[#567C8D] hover:text-[#DC2626]'
               }`}
             >
               <span>DURING</span>
+            </button>
+            <button
+              id="sidebar-mode-floodx"
+              type="button"
+              onClick={() => onSwitchMode('FLOODX')}
+              className={`py-1.5 px-1 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer ${
+                mode === 'FLOODX'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-blue-700 hover:text-blue-900'
+              }`}
+            >
+              <span>FLOODX</span>
             </button>
           </div>
 
@@ -162,10 +175,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               className={`px-2 py-0.5 rounded-full font-bold ${
                 mode === 'BEFORE'
                   ? 'bg-[#C8D9E6]/40 text-[#2F4156]'
-                  : 'bg-red-100 text-[#DC2626]'
+                  : mode === 'DURING'
+                  ? 'bg-red-100 text-[#DC2626]'
+                  : 'bg-blue-100 text-blue-700'
               }`}
             >
-              {mode === 'BEFORE' ? 'Preparedness' : 'Live Emergency'}
+              {mode === 'BEFORE' ? 'Preparedness' : mode === 'DURING' ? 'Live Emergency' : 'Satellite AI'}
             </span>
           </div>
         </div>
@@ -251,6 +266,48 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </button>
               );
             })}
+
+          {mode === 'FLOODX' && (
+            <div className="space-y-3 pt-1">
+              <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200/80 text-xs">
+                <div className="flex items-center gap-1.5 text-blue-700 font-extrabold mb-1">
+                  <Waves className="w-4 h-4 text-blue-600 animate-pulse" />
+                  <span>FLOOD-X System</span>
+                </div>
+                <p className="text-[11px] text-[#567C8D] leading-relaxed">
+                  Sentinel-1 SAR radar imagery, automated drone flood detection, and AI situational reports.
+                </p>
+              </div>
+
+              <div className="px-1 text-[10px] font-extrabold uppercase tracking-wider text-[#567C8D]">
+                Platform Navigation
+              </div>
+              <button
+                type="button"
+                id="sidebar-floodx-back-before"
+                onClick={() => onSwitchMode('BEFORE')}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-[#2F4156] hover:bg-[#F5EFEB] transition cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <LayoutDashboard className="w-4 h-4 text-[#567C8D]" />
+                  <span>Preparedness (BEFORE)</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-[#567C8D]" />
+              </button>
+              <button
+                type="button"
+                id="sidebar-floodx-back-during"
+                onClick={() => onSwitchMode('DURING')}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-[#2F4156] hover:bg-[#F5EFEB] transition cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Radio className="w-4 h-4 text-[#DC2626]" />
+                  <span>Live Emergency (DURING)</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-[#567C8D]" />
+              </button>
+            </div>
+          )}
         </nav>
 
         {/* Role Switcher & Persona helper for hackathon judges */}
@@ -264,11 +321,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {user.role}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-1 text-[11px] font-semibold">
+          <div className="grid grid-cols-3 gap-1 text-[10px] font-semibold">
             <button
+              id="btn-role-citizen"
               type="button"
               onClick={() => onSwitchRole('CITIZEN')}
-              className={`py-1 px-2 rounded-lg transition text-center ${
+              className={`py-1 px-1.5 rounded-lg transition text-center cursor-pointer ${
                 user.role === 'CITIZEN'
                   ? 'bg-white text-[#2F4156] shadow-sm font-bold'
                   : 'text-[#567C8D] hover:bg-white/50'
@@ -277,11 +335,24 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               Citizen
             </button>
             <button
+              id="btn-role-authority"
+              type="button"
+              onClick={() => onSwitchRole('AUTHORITY')}
+              className={`py-1 px-1.5 rounded-lg transition text-center cursor-pointer ${
+                user.role === 'AUTHORITY'
+                  ? 'bg-[#2F4156] text-white shadow-sm font-bold'
+                  : 'text-[#567C8D] hover:bg-white/50'
+              }`}
+            >
+              Authority
+            </button>
+            <button
+              id="btn-role-rescuer"
               type="button"
               onClick={() => onSwitchRole('RESCUER')}
-              className={`py-1 px-2 rounded-lg transition text-center ${
+              className={`py-1 px-1.5 rounded-lg transition text-center cursor-pointer ${
                 user.role === 'RESCUER'
-                  ? 'bg-[#2F4156] text-white shadow-sm font-bold'
+                  ? 'bg-[#DC2626] text-white shadow-sm font-bold'
                   : 'text-[#567C8D] hover:bg-white/50'
               }`}
             >
@@ -419,20 +490,42 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               )}
             </div>
 
+            {/* FLOODX Navigation Button */}
+            <button
+              id="topbar-nav-floodx"
+              type="button"
+              onClick={() => onSwitchMode('FLOODX')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                mode === 'FLOODX'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm ring-2 ring-blue-300'
+                  : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/90'
+              }`}
+              title="Open FLOOD-X Satellite Intelligence Module"
+            >
+              <Waves className={`w-3.5 h-3.5 ${mode === 'FLOODX' ? 'text-white' : 'text-blue-600'}`} />
+              <span>FLOODX</span>
+            </button>
+
             {/* Mode Switch Fast Button */}
             <button
               type="button"
               onClick={() => onSwitchMode(mode === 'BEFORE' ? 'DURING' : 'BEFORE')}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#C8D9E6] hover:bg-[#F5EFEB] text-xs font-bold text-[#2F4156] transition"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#C8D9E6] hover:bg-[#F5EFEB] text-xs font-bold text-[#2F4156] transition cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5 text-[#567C8D]" />
-              <span>Switch to {mode === 'BEFORE' ? 'DURING' : 'BEFORE'}</span>
+              <span>{mode === 'FLOODX' ? 'Exit FLOODX' : `Switch to ${mode === 'BEFORE' ? 'DURING' : 'BEFORE'}`}</span>
             </button>
           </div>
         </header>
 
         {/* View Body */}
-        <main className="flex-1 p-6 lg:p-8 overflow-x-hidden">{children}</main>
+        <main
+          className={`flex-1 overflow-x-hidden ${
+            mode === 'FLOODX' ? 'p-0 overflow-hidden' : 'p-6 lg:p-8'
+          }`}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );
