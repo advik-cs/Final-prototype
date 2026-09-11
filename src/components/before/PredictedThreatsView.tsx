@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { disasterService, DisasterEvent, AffectedZone } from '../../services/disasterService.ts';
 import { User } from '../../services/authService.ts';
+import { useLanguage } from '../../i18n/LanguageContext';
 import {
   AlertTriangle,
   Clock,
@@ -29,6 +30,7 @@ export const PredictedThreatsView: React.FC<PredictedThreatsViewProps> = ({
   disasters,
   onRefreshDisasters,
 }) => {
+  const { t } = useLanguage();
   const [zones, setZones] = useState<AffectedZone[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -144,7 +146,7 @@ export const PredictedThreatsView: React.FC<PredictedThreatsViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] tracking-tight">
-            Predicted Threat Intelligence
+            {t('threats.title')}
           </h1>
           <p className="text-sm font-medium text-[#567C8D] mt-1">
             Sensor trend models, forecasted trajectories, and affected polygon boundaries.

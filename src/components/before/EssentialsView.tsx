@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../../services/authService.ts';
 import { DisasterEvent } from '../../services/disasterService.ts';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { TranslationKey } from '../../i18n';
 import {
   ShieldCheck,
   Droplets,
@@ -51,47 +53,54 @@ interface LiveWeatherData {
   hourly: HourlyForecast[];
 }
 
-const CHECKLIST_ITEMS = [
+interface ChecklistItemConfig {
+  id: string;
+  titleKey: TranslationKey;
+  descKey: TranslationKey;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const CHECKLIST_ITEMS: ChecklistItemConfig[] = [
   {
     id: 'clean_water',
-    title: 'Clean Drinking Water',
-    subtitle: '4 Liters / person / day for 3 days minimum',
+    titleKey: 'essentials.item1.title',
+    descKey: 'essentials.item1.desc',
     icon: Droplets,
   },
   {
     id: 'dry_food',
-    title: 'Non-perishable ready-to-eat dry food & energy bars',
-    subtitle: 'Ready-to-eat cans, nuts, high-calorie nutrition bars, infant formula',
+    titleKey: 'essentials.item2.title',
+    descKey: 'essentials.item2.desc',
     icon: UtensilsCrossed,
   },
   {
     id: 'first_aid_meds',
-    title: 'Comprehensive First-Aid Kit & Prescription Medicines',
-    subtitle: '(Insulin, BP, Inhalers) + sterile bandages, antiseptics & 7-day essential prescriptions',
+    titleKey: 'essentials.item3.title',
+    descKey: 'essentials.item3.desc',
     icon: Cross,
   },
   {
+    id: 'waterproof_docs',
+    titleKey: 'essentials.item4.title',
+    descKey: 'essentials.item4.desc',
+    icon: FileCheck,
+  },
+  {
     id: 'flashlight_torch',
-    title: 'Waterproof LED Flashlight & high-lumen backup torches',
-    subtitle: 'Extra fresh batteries, headlamps, and chemical glow-sticks',
+    titleKey: 'essentials.item5.title',
+    descKey: 'essentials.item5.desc',
     icon: Flashlight,
   },
   {
     id: 'power_banks_radio',
-    title: 'Charged 20,000mAh Power Banks & battery-operated emergency radio',
-    subtitle: 'Dedicated power banks, USB cables, and AM/FM receiver for disaster advisories',
+    titleKey: 'essentials.item6.title',
+    descKey: 'essentials.item6.desc',
     icon: BatteryCharging,
   },
   {
-    id: 'waterproof_docs',
-    title: 'Sealed waterproof zip-pouch with IDs, property deeds & insurance docs',
-    subtitle: 'Aadhaar, passports, property records, health policies, and emergency cash',
-    icon: FileCheck,
-  },
-  {
     id: 'contacts_whistle',
-    title: 'Emergency contacts list printed on laminated paper + loud distress whistle',
-    subtitle: 'Laminated local emergency phone numbers + high-decibel acoustic rescue whistle',
+    titleKey: 'essentials.item7.title',
+    descKey: 'essentials.item7.desc',
     icon: PhoneCall,
   },
 ];
@@ -135,6 +144,7 @@ function getWmoDetails(code: number): { label: string; icon: React.ComponentType
 }
 
 export const EssentialsView: React.FC<EssentialsViewProps> = ({ user }) => {
+  const { t } = useLanguage();
   // Geolocation & Weather States
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<'detecting' | 'detected' | 'denied' | 'unavailable'>('detecting');
@@ -287,10 +297,10 @@ export const EssentialsView: React.FC<EssentialsViewProps> = ({ user }) => {
           <span>Preparedness & Resilience Hub</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] mt-1">
-          Household Essentials & Live Atmospheric Intelligence
+          {t('essentials.title')}
         </h1>
         <p className="text-sm text-[#567C8D] mt-1">
-          Monitor real-time hyper-local weather conditions at your detected location and verify physical preparedness supplies before evacuation or isolation.
+          {t('essentials.subtitle')}
         </p>
       </div>
 
@@ -304,12 +314,12 @@ export const EssentialsView: React.FC<EssentialsViewProps> = ({ user }) => {
             </div>
             <div>
               <h2 className="text-lg font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156]">
-                Live Weather Intelligence
+                {t('essentials.weatherTitle')}
               </h2>
               <div className="flex items-center gap-2 mt-0.5">
                 <MapPin className="w-3.5 h-3.5 text-[#567C8D]" />
                 <span className="text-xs font-medium text-[#567C8D]">
-                  {locationStatus === 'detecting' && 'Detecting your coordinates via GPS...'}
+                  {locationStatus === 'detecting' && t('essentials.fetchingLocation')}
                   {locationStatus === 'detected' && coords && (
                     <span className="text-emerald-700 font-semibold">
                       Live GPS: {coords.lat.toFixed(4)}° N, {coords.lon.toFixed(4)}° E
@@ -397,7 +407,7 @@ export const EssentialsView: React.FC<EssentialsViewProps> = ({ user }) => {
                       {currentWeatherDetails?.label || 'Clear'}
                     </p>
                     <span className="text-xs font-medium text-[#567C8D]">
-                      Feels like {Math.round(weatherData.apparentTemperature)}°C
+                      {t('essentials.feelsLike')} {Math.round(weatherData.apparentTemperature)}°C
                     </span>
                   </div>
                 </div>
@@ -407,7 +417,7 @@ export const EssentialsView: React.FC<EssentialsViewProps> = ({ user }) => {
                   <div className="p-4 rounded-2xl bg-[#F5EFEB]/70 border border-[#C8D9E6]/50 flex flex-col justify-center">
                     <div className="flex items-center gap-1.5 text-xs text-[#567C8D] font-semibold">
                       <Wind className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Wind Speed</span>
+                      <span>{t('essentials.wind')}</span>
                     </div>
                     <span className="text-lg sm:text-xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] mt-1">
                       {weatherData.windSpeed} <span className="text-xs font-medium text-[#567C8D]">km/h</span>
@@ -417,7 +427,7 @@ export const EssentialsView: React.FC<EssentialsViewProps> = ({ user }) => {
                   <div className="p-4 rounded-2xl bg-[#F5EFEB]/70 border border-[#C8D9E6]/50 flex flex-col justify-center">
                     <div className="flex items-center gap-1.5 text-xs text-[#567C8D] font-semibold">
                       <Droplets className="w-3.5 h-3.5 text-sky-600" />
-                      <span>Precipitation</span>
+                      <span>{t('essentials.precipitation')}</span>
                     </div>
                     <span className="text-lg sm:text-xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] mt-1">
                       {weatherData.precipitation} <span className="text-xs font-medium text-[#567C8D]">mm</span>
@@ -427,7 +437,7 @@ export const EssentialsView: React.FC<EssentialsViewProps> = ({ user }) => {
                   <div className="p-4 rounded-2xl bg-[#F5EFEB]/70 border border-[#C8D9E6]/50 flex flex-col justify-center">
                     <div className="flex items-center gap-1.5 text-xs text-[#567C8D] font-semibold">
                       <Thermometer className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>Humidity</span>
+                      <span>{t('essentials.humidity')}</span>
                     </div>
                     <span className="text-lg sm:text-xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] mt-1">
                       {weatherData.relativeHumidity} <span className="text-xs font-medium text-[#567C8D]">%</span>
@@ -505,23 +515,23 @@ export const EssentialsView: React.FC<EssentialsViewProps> = ({ user }) => {
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] mt-1.5">
-              Emergency Essentials Checklist
+              {t('essentials.checklistTitle')}
             </h2>
             <p className="text-xs sm:text-sm text-[#567C8D] mt-1">
-              Verify these 7 life-saving items are pre-packed and accessible before flooding or severe storm conditions worsen.
+              {t('essentials.checklistDesc')}
             </p>
           </div>
 
           {/* Progress Indicator */}
           <div className="sm:text-right flex-shrink-0">
             <span className="text-xs font-bold text-[#567C8D] block uppercase tracking-wider">
-              Preparedness Status
+              {t('essentials.completed')}
             </span>
             <span className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156]">
               {completedCount} / {CHECKLIST_ITEMS.length}
             </span>
             <span className="text-xs font-bold text-emerald-600 block mt-0.5">
-              {progressPercent}% essentials ready
+              {progressPercent}% {t('essentials.completed')}
             </span>
           </div>
         </div>
@@ -549,7 +559,7 @@ export const EssentialsView: React.FC<EssentialsViewProps> = ({ user }) => {
               className="text-xs font-bold text-emerald-700 hover:underline cursor-pointer flex items-center gap-1"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>Mark All Ready</span>
+              <span>{t('essentials.markAllDone')}</span>
             </button>
             <span className="text-[#C8D9E6]">|</span>
             <button
@@ -558,7 +568,7 @@ export const EssentialsView: React.FC<EssentialsViewProps> = ({ user }) => {
               className="text-xs font-bold text-[#567C8D] hover:underline cursor-pointer flex items-center gap-1"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset Checklist</span>
+              <span>{t('essentials.resetList')}</span>
             </button>
           </div>
 
@@ -605,11 +615,11 @@ export const EssentialsView: React.FC<EssentialsViewProps> = ({ user }) => {
                           isChecked ? 'text-emerald-900 line-through opacity-85' : 'text-[#2F4156]'
                         }`}
                       >
-                        {item.title}
+                        {t(item.titleKey)}
                       </h3>
                     </div>
                     <p className="text-xs text-[#567C8D] mt-0.5">
-                      {item.subtitle}
+                      {t(item.descKey)}
                     </p>
                   </div>
                 </div>

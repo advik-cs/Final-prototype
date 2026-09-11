@@ -3,6 +3,8 @@ import { StrideLogo } from '../common/StrideLogo.tsx';
 import { User } from '../../services/authService.ts';
 import { notificationService, NotificationItem } from '../../services/notificationService.ts';
 import { DisasterEvent, disasterService } from '../../services/disasterService.ts';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { LanguageSelectorDropdown } from '../common/LanguageSelectorDropdown';
 import {
   LayoutDashboard,
   Map as MapIcon,
@@ -72,6 +74,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   disasters,
   children,
 }) => {
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -102,22 +105,22 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const unreadCount = notifications.filter((n) => n.status === 'UNREAD').length;
 
   const beforeNavItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    ...(user.role === 'CITIZEN' ? [{ id: 'essentials', label: 'Essentials', icon: ShieldCheck }] : []),
-    { id: 'map', label: 'Map', icon: MapIcon },
-    ...(user.role !== 'AUTHORITY' ? [{ id: 'household', label: 'Household Members', icon: Users }] : []),
-    { id: 'shelters', label: user.role === 'AUTHORITY' ? 'Shelter Information' : 'Shelter Selection', icon: Tent },
-    ...(user.role !== 'AUTHORITY' ? [{ id: 'reconfirmation', label: 'Reconfirmation', icon: CheckCircle2 }] : []),
-    { id: 'occupancy', label: 'Expected Occupancy', icon: Building2 },
-    { id: 'threats', label: 'Predicted Threats', icon: AlertOctagon },
+    { id: 'dashboard', label: t('navigation.dashboard'), icon: LayoutDashboard },
+    ...(user.role === 'CITIZEN' ? [{ id: 'essentials', label: t('navigation.essentials'), icon: ShieldCheck }] : []),
+    { id: 'map', label: t('navigation.map'), icon: MapIcon },
+    ...(user.role !== 'AUTHORITY' ? [{ id: 'household', label: t('navigation.household'), icon: Users }] : []),
+    { id: 'shelters', label: user.role === 'AUTHORITY' ? t('navigation.shelterInfo') : t('navigation.shelters'), icon: Tent },
+    ...(user.role !== 'AUTHORITY' ? [{ id: 'reconfirmation', label: t('navigation.reconfirmation'), icon: CheckCircle2 }] : []),
+    { id: 'occupancy', label: t('navigation.occupancy'), icon: Building2 },
+    { id: 'threats', label: t('navigation.threats'), icon: AlertOctagon },
   ];
 
   const duringNavItems = [
-    { id: 'dashboard', label: 'Dashboard / Community', icon: LayoutDashboard },
-    { id: 'safe', label: 'Are You Safe?', icon: LifeBuoy },
-    ...(user.role !== 'CITIZEN' ? [{ id: 'buildings', label: 'Buildings', icon: Building2 }] : []),
-    { id: 'maps', label: 'Maps', icon: MapIcon },
-    { id: 'rescue', label: 'Rescue Status', icon: Radio },
+    { id: 'dashboard', label: t('navigation.duringDashboard'), icon: LayoutDashboard },
+    { id: 'safe', label: t('navigation.safe'), icon: LifeBuoy },
+    ...(user.role !== 'CITIZEN' ? [{ id: 'buildings', label: t('navigation.buildings'), icon: Building2 }] : []),
+    { id: 'maps', label: t('navigation.maps'), icon: MapIcon },
+    { id: 'rescue', label: t('navigation.rescue'), icon: Radio },
   ];
 
   const isDarkSidebar = mode === 'FLOODX' && user.role !== 'CITIZEN';
@@ -156,7 +159,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   : 'text-[#567C8D] hover:text-[#2F4156]'
               }`}
             >
-              <span>BEFORE</span>
+              <span>{t('common.before')}</span>
             </button>
             <button
               id="sidebar-mode-during"
@@ -170,7 +173,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   : 'text-[#567C8D] hover:text-[#DC2626]'
               }`}
             >
-              <span>DURING</span>
+              <span>{t('common.during')}</span>
             </button>
             {user.role !== 'CITIZEN' && (
               <button
@@ -185,13 +188,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     : 'text-blue-700 hover:text-blue-900'
                 }`}
               >
-                <span>FLOODX</span>
+                <span>{t('common.floodx')}</span>
               </button>
             )}
           </div>
 
           <div className="mt-2.5 flex items-center justify-between text-[11px] font-semibold">
-            <span className={isDarkSidebar ? 'text-slate-400' : 'text-[#567C8D]'}>Current Mode</span>
+            <span className={isDarkSidebar ? 'text-slate-400' : 'text-[#567C8D]'}>{t('common.currentMode')}</span>
             <span
               className={`px-2 py-0.5 rounded-full font-bold ${
                 mode === 'BEFORE'
@@ -205,7 +208,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   : 'bg-blue-100 text-blue-700'
               }`}
             >
-              {mode === 'BEFORE' ? 'Preparedness' : mode === 'DURING' ? 'Live Emergency' : 'Satellite AI'}
+              {mode === 'BEFORE' ? t('common.preparedness') : mode === 'DURING' ? t('common.liveEmergency') : t('common.satelliteAI')}
             </span>
           </div>
         </div>
@@ -214,10 +217,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <nav className="flex-1 p-3 space-y-1">
           <div className={`px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider ${isDarkSidebar ? 'text-slate-400' : 'text-[#567C8D]'}`}>
             {mode === 'BEFORE'
-              ? 'Before Disaster System'
+              ? t('common.beforeSystem')
               : mode === 'DURING'
-              ? 'During Disaster System'
-              : 'Satellite AI System'}
+              ? t('common.duringSystem')
+              : t('common.satelliteAISystem')}
           </div>
 
           {mode === 'BEFORE' &&
@@ -313,7 +316,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               </div>
 
               <div className={`px-1 text-[10px] font-extrabold uppercase tracking-wider ${isDarkSidebar ? 'text-slate-400' : 'text-[#567C8D]'}`}>
-                Platform Navigation
+                {t('common.platformNav')}
               </div>
               <button
                 type="button"
@@ -327,7 +330,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               >
                 <div className="flex items-center gap-2">
                   <LayoutDashboard className={`w-4 h-4 ${isDarkSidebar ? 'text-slate-400' : 'text-[#567C8D]'}`} />
-                  <span>Preparedness (BEFORE)</span>
+                  <span>{t('common.backBefore')}</span>
                 </div>
                 <ChevronRight className={`w-3.5 h-3.5 ${isDarkSidebar ? 'text-slate-400' : 'text-[#567C8D]'}`} />
               </button>
@@ -343,7 +346,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               >
                 <div className="flex items-center gap-2">
                   <Radio className="w-4 h-4 text-[#DC2626]" />
-                  <span>Live Emergency (DURING)</span>
+                  <span>{t('common.backDuring')}</span>
                 </div>
                 <ChevronRight className={`w-3.5 h-3.5 ${isDarkSidebar ? 'text-slate-400' : 'text-[#567C8D]'}`} />
               </button>
@@ -394,7 +397,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <button
             type="button"
             onClick={onLogout}
-            title="Sign out"
+            title={t('common.logout')}
             className={`p-1.5 rounded-lg transition ${
               isDarkSidebar
                 ? 'text-slate-400 hover:text-red-400 hover:bg-[#1C2541]'
@@ -419,7 +422,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           {/* Active Disaster Selector / Indicator */}
           <div className="flex items-center gap-3 min-w-0">
             <span className={`hidden sm:inline text-xs font-bold uppercase tracking-wide ${isDarkSidebar ? 'text-slate-400' : 'text-[#567C8D]'}`}>
-              Disaster Event:
+              {t('common.disasterEvent')}
             </span>
             {disasters.length > 0 ? (
               <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
@@ -455,12 +458,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </span>
               </div>
             ) : (
-              <span className={`text-xs ${isDarkSidebar ? 'text-slate-400' : 'text-[#567C8D]'}`}>No active disasters</span>
+              <span className={`text-xs ${isDarkSidebar ? 'text-slate-400' : 'text-[#567C8D]'}`}>{t('common.noActiveDisasters')}</span>
             )}
           </div>
 
-          {/* Right Header Actions: Notification Bell + Quick Actions */}
+          {/* Right Header Actions: Language Selector + Notification Bell + Quick Actions */}
           <div className="flex items-center gap-3">
+            {/* Multilingual Selector */}
+            <LanguageSelectorDropdown isDark={isDarkSidebar} id="topbar-language-selector" />
+
             {/* Notification Bell */}
             <div className="relative">
               <button

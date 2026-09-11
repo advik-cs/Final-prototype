@@ -3,6 +3,7 @@ import { disasterService, DisasterEvent } from '../../services/disasterService.t
 import { householdService, Household } from '../../services/householdService.ts';
 import { shelterService, ShelterOccupancy } from '../../services/shelterService.ts';
 import { User } from '../../services/authService.ts';
+import { useLanguage } from '../../i18n/LanguageContext';
 import {
   CheckCircle2,
   Clock,
@@ -27,6 +28,7 @@ export const ReconfirmationView: React.FC<ReconfirmationViewProps> = ({
   user,
   activeDisaster,
 }) => {
+  const { t } = useLanguage();
   const [statusData, setStatusData] = useState<any>(null);
   const [household, setHousehold] = useState<Household | null>(null);
   const [shelters, setShelters] = useState<ShelterOccupancy[]>([]);
@@ -289,14 +291,14 @@ export const ReconfirmationView: React.FC<ReconfirmationViewProps> = ({
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 group-hover:text-emerald-400" />
               </div>
               <h3 className="text-sm font-bold text-[#2F4156] group-hover:text-white mt-4">
-                Same Plan
+                {t('reconfirmation.samePlan')}
               </h3>
               <p className="text-xs text-[#567C8D] group-hover:text-[#C8D9E6] mt-1">
-                We are sticking to our recorded location.
+                {t('reconfirmation.samePlanDesc')}
               </p>
             </div>
             <div className="mt-6 pt-3 border-t border-[#C8D9E6]/50 group-hover:border-white/20 flex items-center justify-between text-xs font-bold text-[#2F4156] group-hover:text-white">
-              <span>Confirm Same</span>
+              <span>{t('reconfirmation.confirmSame')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </button>
@@ -313,14 +315,14 @@ export const ReconfirmationView: React.FC<ReconfirmationViewProps> = ({
                 <RotateCcw className="w-5 h-5 text-blue-600 group-hover:text-blue-300" />
               </div>
               <h3 className="text-sm font-bold text-[#2F4156] group-hover:text-white mt-4">
-                Change Location
+                {t('reconfirmation.changeLocation')}
               </h3>
               <p className="text-xs text-[#567C8D] group-hover:text-[#C8D9E6] mt-1">
-                We are moving to a safe shelter or higher ground.
+                {t('reconfirmation.changeLocationDesc')}
               </p>
             </div>
             <div className="mt-6 pt-3 border-t border-[#C8D9E6]/50 group-hover:border-white/20 flex items-center justify-between text-xs font-bold text-[#2F4156] group-hover:text-white">
-              <span>Update Plan</span>
+              <span>{t('reconfirmation.updatePlan')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </button>
@@ -337,14 +339,14 @@ export const ReconfirmationView: React.FC<ReconfirmationViewProps> = ({
                 <HelpCircle className="w-5 h-5 text-amber-600 group-hover:text-amber-300" />
               </div>
               <h3 className="text-sm font-bold text-[#2F4156] group-hover:text-white mt-4">
-                Not Sure
+                {t('reconfirmation.notSure')}
               </h3>
               <p className="text-xs text-[#567C8D] group-hover:text-amber-100 mt-1">
-                Evaluating conditions as weather evolves.
+                {t('reconfirmation.notSureDesc')}
               </p>
             </div>
             <div className="mt-6 pt-3 border-t border-[#C8D9E6]/50 group-hover:border-white/20 flex items-center justify-between text-xs font-bold text-[#2F4156] group-hover:text-white">
-              <span>Flag as Unsure</span>
+              <span>{t('reconfirmation.flagUnsure')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </button>

@@ -3,6 +3,7 @@ import { householdService, Household, HouseholdMember } from '../../services/hou
 import { disasterService, DisasterEvent } from '../../services/disasterService.ts';
 import { shelterService, Shelter } from '../../services/shelterService.ts';
 import { User } from '../../services/authService.ts';
+import { useLanguage } from '../../i18n/LanguageContext';
 import {
   Users,
   UserPlus,
@@ -28,6 +29,7 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
   user,
   activeDisaster,
 }) => {
+  const { t } = useLanguage();
   const [household, setHousehold] = useState<Household | null>(null);
   const [shelters, setShelters] = useState<Shelter[]>([]);
   const [expectedLocationsMap, setExpectedLocationsMap] = useState<
@@ -252,7 +254,7 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] tracking-tight">
-            Household Members & Disaster Plans
+            {t('household.title')}
           </h1>
           <p className="text-sm font-medium text-[#567C8D] mt-1">
             Registered address: {household?.address || 'Your Registered Home'}
@@ -283,7 +285,7 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
               ) : (
                 <Save className="w-4 h-4 text-[#C8D9E6]" />
               )}
-              <span>{saveSuccess ? 'Plans Saved!' : 'Save Plans to STRIDE'}</span>
+              <span>{saveSuccess ? t('household.savedSuccess') : t('household.savePlans')}</span>
             </button>
           )}
         </div>
@@ -370,7 +372,7 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
                       <Home
                         className={`w-4 h-4 ${plan.type === 'HOME' ? 'text-[#C8D9E6]' : 'text-[#567C8D]'}`}
                       />
-                      <span className="text-xs font-bold">My Home</span>
+                      <span className="text-xs font-bold">{t('household.planHome')}</span>
                     </button>
 
                     {/* Option 2: Designated Shelter */}
@@ -386,7 +388,7 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
                       <Tent
                         className={`w-4 h-4 ${plan.type === 'SHELTER' ? 'text-white' : 'text-[#059669]'}`}
                       />
-                      <span className="text-xs font-bold">Safe Shelter</span>
+                      <span className="text-xs font-bold">{t('household.planShelter')}</span>
                     </button>
 
                     {/* Option 3: Another Location */}
@@ -402,7 +404,7 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
                       <MapPin
                         className={`w-4 h-4 ${plan.type === 'OTHER_CITY' ? 'text-white' : 'text-[#567C8D]'}`}
                       />
-                      <span className="text-xs font-bold">Other City</span>
+                      <span className="text-xs font-bold">{t('household.planOtherCity')}</span>
                     </button>
 
                     {/* Option 4: I Don't Know Yet */}
@@ -418,7 +420,7 @@ export const HouseholdMembersView: React.FC<HouseholdMembersViewProps> = ({
                       <HelpCircle
                         className={`w-4 h-4 ${plan.type === 'UNKNOWN' ? 'text-white' : 'text-amber-600'}`}
                       />
-                      <span className="text-xs font-bold">Not Sure</span>
+                      <span className="text-xs font-bold">{t('household.planUnknown')}</span>
                     </button>
                   </div>
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { disasterService, BuildingIntelligence, DisasterEvent } from '../../services/disasterService.ts';
 import { User } from '../../services/authService.ts';
+import { useLanguage } from '../../i18n/LanguageContext';
 import {
   Building2,
   Users,
@@ -25,6 +26,7 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
   user,
   activeDisaster,
 }) => {
+  const { t } = useLanguage();
   const [buildings, setBuildings] = useState<BuildingIntelligence[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] tracking-tight">
-            Building Expected Occupancy
+            {t('shelters.occupancy')}
           </h1>
           <p className="text-sm font-medium text-[#567C8D] mt-1">
             Pre-disaster census intelligence. Expected occupancy counts{' '}

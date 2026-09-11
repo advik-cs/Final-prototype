@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { StrideLogo } from '../common/StrideLogo.tsx';
 import { authApi, UnifiedUser, UserRole, DEMO_CREDENTIALS } from '../../api/authApi';
 import { ShieldCheck, UserCheck, ArrowRight, Loader2, Sparkles, User as UserIcon, Phone, CreditCard, Radio } from 'lucide-react';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { LanguageSelectorDropdown } from '../common/LanguageSelectorDropdown';
 
 interface LoginPageProps {
   onLoginSuccess: (user: UnifiedUser) => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+  const { t } = useLanguage();
   const [selectedRole, setSelectedRole] = useState<UserRole>('CITIZEN');
   const [aadharNumber, setAadharNumber] = useState('5432 8901 2345');
   const [fullName, setFullName] = useState('Ramesh Iyer');
@@ -53,7 +56,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       const user = await authApi.loginDemo(role);
       onLoginSuccess(user);
     } catch (err: any) {
-      setError(err.message || 'Demo login failed.');
+      setError(err.message || t('auth.errorAuthFailed'));
     } finally {
       setLoading(false);
     }
@@ -66,12 +69,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     const cleanName = fullName.trim();
 
     if (!cleanId) {
-      setError(selectedRole === 'CITIZEN' ? 'Please enter your 12-digit Aadhaar number.' : 'Please enter your Service/Badge ID.');
+      setError(selectedRole === 'CITIZEN' ? t('auth.errorAadhaar') : t('auth.errorBadge'));
       return;
     }
 
     if (!cleanPhone || cleanPhone.length < 10) {
-      setError('Please enter a valid 10-digit mobile number.');
+      setError(t('auth.errorMobile'));
       return;
     }
 
@@ -86,7 +89,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       });
       onLoginSuccess(user);
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please check credentials.');
+      setError(err.message || t('auth.errorAuthFailed'));
     } finally {
       setLoading(false);
     }
@@ -111,13 +114,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         </svg>
       </div>
 
-      {/* Top Header with STRIDE Branding */}
+      {/* Top Header with STRIDE Branding and Language Selector */}
       <header className="relative z-10 p-6 md:p-8 flex items-center justify-between">
         <StrideLogo size="md" showSubtitle={true} />
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 border border-[#C8D9E6]/60 text-xs font-semibold text-[#567C8D] backdrop-blur-sm">
-          <ShieldCheck className="w-4 h-4 text-[#567C8D]" />
-          <span>Dual Phase Protocol: BEFORE (Preparedness) + DURING (Live SOS)</span>
-        </div>
+        <LanguageSelectorDropdown id="login-language-selector" />
       </header>
 
       {/* Center Auth Card */}
@@ -126,10 +126,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           {/* Header Typography */}
           <div className="text-center mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] tracking-tight">
-              Welcome to STRIDE
+              {t('auth.welcomeTitle')}
             </h1>
             <p className="text-sm font-medium text-[#567C8D] mt-1.5">
-              Sensor Trend Intelligence for Detection & Evaluation
+              {t('auth.subtitle')}
             </p>
           </div>
 
@@ -146,7 +146,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               }`}
             >
               <UserCheck className="w-3.5 h-3.5" />
-              <span>Citizen</span>
+              <span>{t('auth.roleCitizen')}</span>
             </button>
             <button
               id="role-tab-authority"
@@ -159,7 +159,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               }`}
             >
               <Radio className="w-3.5 h-3.5" />
-              <span>Authority</span>
+              <span>{t('auth.roleAuthority')}</span>
             </button>
             <button
               id="role-tab-rescuer"
@@ -172,7 +172,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Rescuer</span>
+              <span>{t('auth.roleRescuer')}</span>
             </button>
           </div>
 
@@ -181,12 +181,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <div className="text-xs text-[#567C8D]">
               <span className="font-bold text-[#2F4156] block">
                 {selectedRole === 'CITIZEN'
-                  ? 'Citizen Portal (Census & SOS)'
+                  ? t('auth.citizenPortal')
                   : selectedRole === 'AUTHORITY'
-                  ? 'Incident Command (Ranked Triage & Dispatch)'
-                  : 'Rescuer Field Unit (Active Missions)'}
+                  ? t('auth.authorityPortal')
+                  : t('auth.rescuerPortal')}
               </span>
-              <span className="text-[11px]">Real backend seeded credentials ready</span>
+              <span className="text-[11px]">{t('auth.credentialsReady')}</span>
             </div>
             <button
               id="btn-quick-demo-login"
@@ -197,7 +197,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               title="Click for instant 1-click login with seeded backend data"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#C8D9E6]" />
-              <span>Quick Demo</span>
+              <span>{t('auth.quickDemo')}</span>
             </button>
           </div>
 
@@ -218,10 +218,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 <CreditCard className="w-3.5 h-3.5 text-[#567C8D]" />
                 <span>
                   {selectedRole === 'CITIZEN'
-                    ? 'Aadhaar / National ID'
+                    ? t('auth.aadhaarLabel')
                     : selectedRole === 'AUTHORITY'
-                    ? 'Authority Badge / Dispatcher ID'
-                    : 'Responder Badge / Squad ID'}
+                    ? t('auth.badgeLabelAuthority')
+                    : t('auth.badgeLabelRescuer')}
                 </span>
               </label>
               <input
@@ -241,7 +241,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 className="block text-xs font-bold text-[#2F4156] mb-1.5 flex items-center gap-1.5"
               >
                 <UserIcon className="w-3.5 h-3.5 text-[#567C8D]" />
-                <span>Full Name</span>
+                <span>{t('auth.fullNameLabel')}</span>
               </label>
               <input
                 id="citizen-name-input"
@@ -260,7 +260,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 className="block text-xs font-bold text-[#2F4156] mb-1.5 flex items-center gap-1.5"
               >
                 <Phone className="w-3.5 h-3.5 text-[#567C8D]" />
-                <span>Mobile Number (10 digits)</span>
+                <span>{t('auth.mobileLabel')}</span>
               </label>
               <input
                 id="citizen-mobile-input"
@@ -282,33 +282,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-[#C8D9E6]" />
-                  <span>Connecting to Backends...</span>
+                  <span>{t('auth.connecting')}</span>
                 </>
               ) : (
                 <>
                   <span>
                     {selectedRole === 'CITIZEN'
-                      ? 'Enter Citizen Portal'
+                      ? t('auth.enterCitizen')
                       : selectedRole === 'AUTHORITY'
-                      ? 'Enter Authority Command'
-                      : 'Access Rescuer Field Command'}
+                      ? t('auth.enterAuthority')
+                      : t('auth.enterRescuer')}
                   </span>
                   <ArrowRight className="w-4 h-4 text-[#C8D9E6]" />
                 </>
               )}
             </button>
           </form>
-
-          {/* Privacy Footnote */}
-          <p className="text-center text-xs text-[#567C8D] mt-6 leading-relaxed">
-            STRIDE connects to BEFORE (Port 4000) & DURING (Port 5000) backends securely.
-          </p>
         </div>
       </main>
 
       {/* Footer */}
       <footer className="relative z-10 py-4 text-center text-xs text-[#567C8D]/80">
-        STRIDE Platform • Dual-Backend Disaster Response Architecture
+        {t('auth.footerText')}
       </footer>
     </div>
   );

@@ -4,6 +4,7 @@ import { beforeApi } from '../../api/beforeApi';
 import { DisasterEvent } from '../../services/disasterService.ts';
 import { User } from '../../services/authService.ts';
 import { DuringTab } from '../layout/DashboardLayout.tsx';
+import { useLanguage } from '../../i18n/LanguageContext';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -36,6 +37,7 @@ export const AreYouSafeView: React.FC<AreYouSafeViewProps> = ({
   activeDisaster,
   onNavigateTab,
 }) => {
+  const { t } = useLanguage();
   const [currentStatus, setCurrentStatus] = useState<'SAFE' | 'IN_DISTRESS' | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -174,10 +176,10 @@ export const AreYouSafeView: React.FC<AreYouSafeViewProps> = ({
           Immediate Safety Check-in & Live Dispatch
         </span>
         <h1 className="text-3xl sm:text-4xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] tracking-tight mt-2">
-          ARE YOU SAFE?
+          {t('during.areYouSafeTitle')}
         </h1>
         <p className="text-sm font-medium text-[#567C8D] mt-1.5 max-w-lg mx-auto">
-          Your emergency telemetry communicates directly with the state disaster command center and NDRF/SDRF response units.
+          {t('during.areYouSafeSubtitle')}
         </p>
       </div>
 
@@ -293,10 +295,10 @@ export const AreYouSafeView: React.FC<AreYouSafeViewProps> = ({
             </div>
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk',sans-serif] tracking-tight">
-                I'M SAFE
+                {t('during.imSafe')}
               </h2>
               <p className="text-xs font-medium text-emerald-100 mt-1">
-                No immediate danger. Sheltered and accounted for.
+                {t('during.imSafeDesc')}
               </p>
             </div>
           </button>
@@ -313,10 +315,10 @@ export const AreYouSafeView: React.FC<AreYouSafeViewProps> = ({
             </div>
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk',sans-serif] tracking-tight">
-                I NEED HELP (SOS)
+                {t('during.iNeedHelp')}
               </h2>
               <p className="text-xs font-medium text-red-100 mt-1">
-                Active flood threat, water rising, injuries, or trapped.
+                {t('during.iNeedHelpDesc')}
               </p>
             </div>
           </button>
@@ -366,17 +368,17 @@ export const AreYouSafeView: React.FC<AreYouSafeViewProps> = ({
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#2F4156] mb-1.5">
-                  Current Water Level
+                  {t('during.waterLevel')}
                 </label>
                 <select
                   value={waterLevel}
                   onChange={(e) => setWaterLevel(e.target.value as WaterLevel)}
                   className="w-full px-4 py-2.5 rounded-xl border border-[#C8D9E6] text-xs font-semibold text-[#2F4156] outline-none"
                 >
-                  <option value="LOW">Low (Ankle to Knee - Below 1.5 ft)</option>
-                  <option value="MEDIUM">Medium (Waist Deep - 1.5 to 3 ft)</option>
-                  <option value="HIGH">High (Chest Deep - 3 to 5 ft)</option>
-                  <option value="EXTREME">Extreme (Reaching ceiling / roof - Over 5 ft)</option>
+                  <option value="LOW">{t('during.waterAnkle')}</option>
+                  <option value="MEDIUM">{t('during.waterWaist')}</option>
+                  <option value="HIGH">{t('during.waterChest')}</option>
+                  <option value="EXTREME">{t('during.waterSubmerged')}</option>
                 </select>
               </div>
             </div>
@@ -545,7 +547,7 @@ export const AreYouSafeView: React.FC<AreYouSafeViewProps> = ({
                 ) : (
                   <Send className="w-4 h-4 text-white" />
                 )}
-                <span>Submit SOS to Dispatch Engine</span>
+                <span>{actionLoading ? t('during.sending') : t('during.sendSOS')}</span>
               </button>
             </div>
           </form>
