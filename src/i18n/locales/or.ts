@@ -180,4 +180,22 @@ export const or: Partial<Record<TranslationKey, string>> = {
   'emergency.safe': 'ସୁରକ୍ଷିତ',
   'emergency.callForHelp': 'ସାହାଯ୍ୟ ପାଇଁ ଯୋଗାଯୋଗ କରନ୍ତୁ',
   'emergency.submitEmergencyRequest': 'ଜରୁରୀ ସହାୟତା ଅନୁରୋଧ ପଠାନ୍ତୁ',
+
+  // Weather & Operational Updates
+  'navigation.operationalWeather': 'କାର୍ଯ୍ୟକ୍ଷମ ପାଣିପାଗ',
+  'shelters.informationalNotice': 'ନିର୍ଦ୍ଧାରିତ ଆଶ୍ରୟସ୍ଥଳୀ — ଜରୁରୀକାଳୀନ ସ୍ଥାନାନ୍ତର ସୂଚନା ନିର୍ଦ୍ଦେଶିକା',
+  'weather.title': 'ବେଙ୍ଗାଲୁରୁ ଅଞ୍ଚଳ-ୱାରୀ ପାଣିପାଗ',
+  'weather.subtitle': 'ବନ୍ୟା ପ୍ରବଣ ସହରାଞ୍ଚଳରେ ରିଅଲ-ଟାଇମ ପାଣିପାଗ ନିରୀକ୍ଷଣ।',
+  'weather.monitoredRegions': '୧୨ଟି ବେଙ୍ଗାଲୁରୁ ଅଞ୍ଚଳ ନିରୀକ୍ଷଣରେ',
+  'weather.highestRainAlert': 'ସର୍ବାଧିକ ବର୍ଷା ଚେତାବନୀ',
+  'weather.redetect': 'ସ୍ଥାନ ପୁନଃ ଖୋଜନ୍ତୁ / ତାଜା କରନ୍ତୁ',
+  'weather.liveConditions': 'ଲାଇଭ ପାଣିପାଗ ସ୍ଥିତି',
+  'weather.forecast6h': 'ଆଗାମୀ ୬ ଘଣ୍ଟାର ପୂର୍ବାନୁମାନ',
+  'weather.apparent': 'ଅନୁଭୂତ ତାପମାତ୍ରା',
+  'weather.humidity': 'ଆର୍ଦ୍ରତା',
+  'weather.windSpeed': 'ପବନର ବେଗ',
+  'weather.precipitation': 'ବର୍ଷାର ପରିମାଣ',
+  'weather.riskElevated': 'ବର୍ଦ୍ଧିତ ବର୍ଷା ବିପଦ',
+  'weather.riskNormal': 'ସାଧାରଣ / ସ୍ଥିର',
+  'weather.riskModerate': 'ମଧ୍ୟମ ଜଳବନ୍ଦୀ ସତର୍କତା',
 };

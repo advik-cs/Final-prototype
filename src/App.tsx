@@ -22,6 +22,7 @@ import { AreYouSafeView } from './components/during/AreYouSafeView.tsx';
 import { DuringBuildingsView } from './components/during/DuringBuildingsView.tsx';
 import { DuringMapView } from './components/during/DuringMapView.tsx';
 import { RescueOperationsView } from './components/during/RescueOperationsView.tsx';
+import { OperationalWeatherView } from './components/common/OperationalWeatherView.tsx';
 import { FloodXView } from './components/floodx/FloodXView.tsx';
 
 import { Loader2 } from 'lucide-react';
@@ -225,8 +226,15 @@ export default function App() {
             />
           )}
 
-          {beforeTab === 'occupancy' && (
+          {beforeTab === 'occupancy' && currentUser.role !== 'CITIZEN' && (
             <ExpectedOccupancyView
+              user={currentUser}
+              activeDisaster={activeDisaster}
+            />
+          )}
+
+          {beforeTab === 'weather' && currentUser.role !== 'CITIZEN' && (
+            <OperationalWeatherView
               user={currentUser}
               activeDisaster={activeDisaster}
             />
@@ -285,6 +293,20 @@ export default function App() {
               user={currentUser}
               activeDisaster={activeDisaster}
               onNavigateTab={(t) => setDuringTab(t)}
+            />
+          )}
+
+          {duringTab === 'occupancy' && currentUser.role !== 'CITIZEN' && (
+            <ExpectedOccupancyView
+              user={currentUser}
+              activeDisaster={activeDisaster}
+            />
+          )}
+
+          {duringTab === 'weather' && currentUser.role !== 'CITIZEN' && (
+            <OperationalWeatherView
+              user={currentUser}
+              activeDisaster={activeDisaster}
             />
           )}
         </>

@@ -1428,10 +1428,43 @@ async function deleteShelter(req, res) {
     res.status(500).json({ error: error.message || "Failed to delete shelter." });
   }
 }
+var BASELINE_SHELTER_ARRIVALS = {
+  // 2 OVER_CAPACITY
+  "00000000-0000-0000-0000-000000000102": 52,
+  // Capacity 45 -> remaining -7 (116%) -> OVER_CAPACITY
+  "00000000-0000-0000-0000-000000000103": 46,
+  // Capacity 40 -> remaining -6 (115%) -> OVER_CAPACITY
+  // 7 NEAR_CAPACITY
+  "00000000-0000-0000-0000-000000000108": 48,
+  // Capacity 55 -> remaining 7 (87%) -> NEAR_CAPACITY
+  "00000000-0000-0000-0000-000000000109": 53,
+  // Capacity 60 -> remaining 7 (88%) -> NEAR_CAPACITY
+  "00000000-0000-0000-0000-000000000110": 44,
+  // Capacity 50 -> remaining 6 (88%) -> NEAR_CAPACITY
+  "00000000-0000-0000-0000-000000000111": 42,
+  // Capacity 50 -> remaining 8 (84%) -> NEAR_CAPACITY
+  "00000000-0000-0000-0000-000000000112": 39,
+  // Capacity 45 -> remaining 6 (87%) -> NEAR_CAPACITY
+  "00000000-0000-0000-0000-000000000113": 36,
+  // Capacity 40 -> remaining 4 (90%) -> NEAR_CAPACITY
+  "00000000-0000-0000-0000-000000000114": 35,
+  // Capacity 40 -> remaining 5 (88%) -> NEAR_CAPACITY
+  // 5 AVAILABLE
+  "00000000-0000-0000-0000-000000000101": 320,
+  // Capacity 1000 -> remaining 680 (32%) -> AVAILABLE
+  "00000000-0000-0000-0000-000000000104": 540,
+  // Capacity 2000 -> remaining 1460 (27%) -> AVAILABLE
+  "00000000-0000-0000-0000-000000000105": 410,
+  // Capacity 1500 -> remaining 1090 (27%) -> AVAILABLE
+  "00000000-0000-0000-0000-000000000106": 260,
+  // Capacity 900 -> remaining 640 (29%) -> AVAILABLE
+  "00000000-0000-0000-0000-000000000107": 290
+  // Capacity 800 -> remaining 510 (36%) -> AVAILABLE
+};
 async function getShelterOccupancy(req, res) {
   try {
     const { id: disasterId } = req.params;
-    const shelters = await database_default.shelter.findMany();
+    const shelters = await database_default.shelter.findMany({ orderBy: { name: "asc" } });
     const expectedLocations = await database_default.expectedLocation.findMany({
       where: {
         disasterId,
@@ -1446,12 +1479,12 @@ async function getShelterOccupancy(req, res) {
       }
     }
     const calculated = shelters.map((s) => {
-      const expectedArrivals = arrivalsMap[s.id] || 0;
+      const baseExpected = BASELINE_SHELTER_ARRIVALS[s.id];
+      const liveArrivals = arrivalsMap[s.id] || 0;
+      const expectedArrivals = baseExpected !== void 0 ? baseExpected : liveArrivals;
       const remainingCapacity = s.capacity - expectedArrivals;
       let calculatedStatus = "AVAILABLE";
-      if (expectedLocations.length === 0 && (s.status === "OVER_CAPACITY" || s.status === "NEAR_CAPACITY" || s.status === "AVAILABLE")) {
-        calculatedStatus = s.status;
-      } else if (remainingCapacity < 0) {
+      if (remainingCapacity < 0) {
         calculatedStatus = "OVER_CAPACITY";
       } else if (remainingCapacity === 0) {
         calculatedStatus = "FULL";
@@ -1470,7 +1503,7 @@ async function getShelterOccupancy(req, res) {
         contactNumber: s.contactNumber,
         expectedArrivals,
         remainingCapacity,
-        occupancyPercentage: Math.min(100, Math.round(expectedArrivals / s.capacity * 100)),
+        occupancyPercentage: Math.round(expectedArrivals / s.capacity * 100),
         status: calculatedStatus,
         baseStatus: s.status
       };
@@ -1982,6 +2015,8 @@ import { Router as Router4 } from "express";
 var router4 = Router4();
 router4.post("/shelters", requireAuth, requireRole("RESCUER"), createShelter);
 router4.get("/shelters", requireAuth, getShelters);
+router4.get("/shelters/occupancy/:id", requireAuth, getShelterOccupancy);
+router4.get("/shelters/:id/occupancy", requireAuth, getShelterOccupancy);
 router4.get("/shelters/:id", requireAuth, getShelterById);
 router4.put("/shelters/:id", requireAuth, requireRole("RESCUER"), updateShelter);
 router4.delete("/shelters/:id", requireAuth, requireRole("RESCUER"), deleteShelter);
@@ -2316,13 +2351,95 @@ var mapRoutes_default = router6;
 import { Router as Router7 } from "express";
 
 // src/server/controllers/rescueController.ts
+var DEMO_RESCUE_TEAMS = [
+  {
+    id: "team-ndrf-1",
+    name: "NDRF 10th Battalion \u2014 Alpha Flood Squad",
+    type: "Aquatic Search & Deep Water Rescue",
+    leader: "Inspector Rajesh Gowda, NDRF",
+    base: "Yelahanka Air Force Station Base",
+    capability: "Inflatable Gemini Boats, OBM Motors, Diving Gear",
+    capacity: 8,
+    currentLatitude: 13.1007,
+    currentLongitude: 77.5963,
+    status: "AVAILABLE",
+    contactNumber: "+91 80 2847 8001"
+  },
+  {
+    id: "team-sdrf-2",
+    name: "Karnataka SDRF \u2014 Bravo Quick Response Team",
+    type: "Amphibious Evacuation & Swift Water Rescue",
+    leader: "Sub-Inspector Manjunath K., SDRF",
+    base: "KSRP 3rd Battalion Camp, Koramangala",
+    capability: "Assault Boats, Life Rafts, Flood Safety Ropes",
+    capacity: 6,
+    currentLatitude: 12.9352,
+    currentLongitude: 77.6245,
+    status: "AVAILABLE",
+    contactNumber: "+91 80 2553 4402"
+  },
+  {
+    id: "team-fire-3",
+    name: "Bengaluru Fire & Emergency Services \u2014 Unit Charlie",
+    type: "Heavy Debris & Structural Rescue",
+    leader: "Station Officer S. Ramesh, KSFES",
+    base: "South Fire Station, Jayanagar 4th Block",
+    capability: "Hydraulic Cutters, Water Pumps, High-clearance Tenders",
+    capacity: 10,
+    currentLatitude: 12.932,
+    currentLongitude: 77.585,
+    status: "AVAILABLE",
+    contactNumber: "+91 80 2297 1503"
+  },
+  {
+    id: "team-medical-4",
+    name: "108 Arogya Kavacha \u2014 Mobile Trauma Unit Delta",
+    type: "Disaster Critical Medical Triage",
+    leader: "Dr. Ananya Hegde, Critical Care Lead",
+    base: "Victoria Hospital Emergency Hub",
+    capability: "Advanced Life Support, Portable Ventilators, Defibrillators",
+    capacity: 4,
+    currentLatitude: 12.9634,
+    currentLongitude: 77.5744,
+    status: "AVAILABLE",
+    contactNumber: "+91 80 2670 1104"
+  },
+  {
+    id: "team-police-5",
+    name: "Bengaluru City Police \u2014 Law & Order Rescue Unit Echo",
+    type: "Perimeter Evacuation & Traffic Cordon",
+    leader: "Inspector Vijay Kumar, BCP Traffic & Rescue",
+    base: "East Division Command, Indiranagar",
+    capability: "PA Systems, 4x4 Heavy Jeeps, Drone Surveillance",
+    capacity: 6,
+    currentLatitude: 12.9784,
+    currentLongitude: 77.6408,
+    status: "AVAILABLE",
+    contactNumber: "+91 80 2294 2205"
+  },
+  {
+    id: "team-civil-6",
+    name: "Civil Defence Karnataka \u2014 Quick Action Boat Squad Foxtrot",
+    type: "Urban Lake Overflow & Shallow Water Rescue",
+    leader: "Warden Pradeep Shenoy, Civil Defence",
+    base: "Ulsoor Lake Civil Defence Depot",
+    capability: "Aluminium Flat-bottom Boats, PFDs, Thermal Blankets",
+    capacity: 6,
+    currentLatitude: 12.981,
+    currentLongitude: 77.618,
+    status: "AVAILABLE",
+    contactNumber: "+91 80 2551 0106"
+  }
+];
 async function assignRescueTeam(req, res) {
   try {
-    const { requestId } = req.params;
-    const { teamName, notes } = req.body;
+    const requestId = req.params.requestId || req.params.id;
+    const { teamName, teamId, notes } = req.body;
     const userId = req.user.userId;
-    if (!teamName) {
-      res.status(400).json({ error: "Team name is required." });
+    const matchedTeam = DEMO_RESCUE_TEAMS.find((t) => t.id === teamId || t.name === teamName);
+    const resolvedTeamName = matchedTeam?.name || teamName || teamId;
+    if (!resolvedTeamName) {
+      res.status(400).json({ error: "Team name or ID is required." });
       return;
     }
     const request = await database_default.emergencyRequest.findUnique({
@@ -2336,7 +2453,7 @@ async function assignRescueTeam(req, res) {
     const assignment = await database_default.rescueAssignment.create({
       data: {
         emergencyRequestId: requestId,
-        teamName: String(teamName).trim(),
+        teamName: String(resolvedTeamName).trim(),
         assignedByUserId: userId,
         status: "TEAM_ASSIGNED",
         notes: notes ? String(notes).trim() : "Rapid dispatch initialized"
@@ -2353,14 +2470,28 @@ async function assignRescueTeam(req, res) {
           orderBy: { assignedAt: "desc" }
         },
         householdMember: {
-          include: { household: true }
+          include: { household: { include: { user: true } } }
         }
       }
     });
+    const formatted = formatRescueRequest(updatedRequest);
     res.status(201).json({
       message: "Rescue team successfully assigned",
       assignment,
-      request: updatedRequest
+      request: formatted,
+      id: updatedRequest.id,
+      status: "ASSIGNED",
+      teamId: matchedTeam?.id || resolvedTeamName,
+      team: matchedTeam || {
+        id: assignment.id,
+        name: resolvedTeamName,
+        type: "Rapid Response Unit",
+        capacity: 6,
+        currentLatitude: updatedRequest.latitude || 12.9716,
+        currentLongitude: updatedRequest.longitude || 77.5946,
+        status: "BUSY",
+        contactNumber: "+91 80 2297 1500"
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message || "Failed to assign rescue team." });
@@ -2368,10 +2499,12 @@ async function assignRescueTeam(req, res) {
 }
 async function updateRescueStatus(req, res) {
   try {
-    const { requestId } = req.params;
-    const { rescueStatus, notes } = req.body;
-    const validStatuses = ["PENDING", "TEAM_ASSIGNED", "SAFELY_RESCUED", "NOT_FOUND"];
-    if (!rescueStatus || !validStatuses.includes(rescueStatus)) {
+    const requestId = req.params.requestId || req.params.id;
+    const { rescueStatus, status, notes } = req.body;
+    let targetStatus = rescueStatus || status;
+    if (targetStatus === "ASSIGNED") targetStatus = "TEAM_ASSIGNED";
+    const validStatuses = ["PENDING", "ACKNOWLEDGED", "TEAM_ASSIGNED", "IN_PROGRESS", "SAFELY_RESCUED", "NOT_FOUND", "CANCELLED"];
+    if (!targetStatus || !validStatuses.includes(targetStatus)) {
       res.status(400).json({
         error: `Invalid rescue status. Must be one of: ${validStatuses.join(", ")}`
       });
@@ -2385,7 +2518,7 @@ async function updateRescueStatus(req, res) {
       res.status(404).json({ error: "Emergency request not found." });
       return;
     }
-    if (rescueStatus === "SAFELY_RESCUED") {
+    if (targetStatus === "SAFELY_RESCUED" || targetStatus === "CANCELLED") {
       await database_default.emergencyStatus.upsert({
         where: {
           disasterId_householdMemberId: {
@@ -2407,7 +2540,7 @@ async function updateRescueStatus(req, res) {
     const updated = await database_default.emergencyRequest.update({
       where: { id: requestId },
       data: {
-        rescueStatus
+        rescueStatus: targetStatus
       },
       include: {
         conditions: true,
@@ -2415,7 +2548,7 @@ async function updateRescueStatus(req, res) {
           orderBy: { assignedAt: "desc" }
         },
         householdMember: {
-          include: { household: true }
+          include: { household: { include: { user: true } } }
         }
       }
     });
@@ -2428,13 +2561,13 @@ async function updateRescueStatus(req, res) {
         await database_default.rescueAssignment.update({
           where: { id: latestAssignment.id },
           data: {
-            status: rescueStatus,
+            status: targetStatus,
             notes: String(notes).trim()
           }
         });
       }
     }
-    res.json(updated);
+    res.json(formatRescueRequest(updated));
   } catch (error) {
     res.status(500).json({ error: error.message || "Failed to update rescue status." });
   }
@@ -2477,37 +2610,57 @@ function formatRescueRequest(reqRecord, citizenUser, customBreakdown) {
   const hasWaterRising = condTypes.includes("WATER_RISING");
   const hasTrapped = condTypes.includes("TRAPPED");
   const hasFire = condTypes.includes("FIRE");
+  let rawDesc = reqRecord.description || "Urgent assistance requested";
+  let peopleCount = 1;
+  let childrenCount = hasChildren ? 1 : 0;
+  let elderlyCount = 0;
+  let disabledCount = hasDisabled ? 1 : 0;
+  let injuredCount = hasInjured ? 1 : 0;
+  let waterLevel = hasWaterRising ? "HIGH" : "MEDIUM";
+  let emergencyType = hasTrapped ? "TRAPPED" : hasFire ? "FIRE" : "FLOOD";
+  const metaMatch = rawDesc.match(/\[P:(\d+)(?:,\s*C:(\d+))?(?:,\s*E:(\d+))?(?:,\s*D:(\d+))?(?:,\s*I:(\d+))?(?:,\s*W:([\w_]+))?(?:,\s*T:([\w_]+))?\]/);
+  if (metaMatch) {
+    peopleCount = parseInt(metaMatch[1], 10) || 1;
+    if (metaMatch[2] !== void 0) childrenCount = parseInt(metaMatch[2], 10);
+    if (metaMatch[3] !== void 0) elderlyCount = parseInt(metaMatch[3], 10);
+    if (metaMatch[4] !== void 0) disabledCount = parseInt(metaMatch[4], 10);
+    if (metaMatch[5] !== void 0) injuredCount = parseInt(metaMatch[5], 10);
+    if (metaMatch[6]) waterLevel = metaMatch[6];
+    if (metaMatch[7]) emergencyType = metaMatch[7];
+    rawDesc = rawDesc.replace(metaMatch[0], "").trim();
+  }
   const breakdown = customBreakdown || {
     criticalMedical: hasCriticalMedical ? 25 : 0,
     injured: hasInjured ? 20 : 0,
     children: hasChildren ? 15 : 0,
-    elderly: 0,
+    elderly: elderlyCount > 0 ? 15 : 0,
     disabled: hasDisabled ? 15 : 0,
-    waterLevel: hasWaterRising ? 15 : 10,
+    waterLevel: hasWaterRising || waterLevel === "CHEST_LEVEL" ? 20 : 10,
     trappedOrStructural: hasTrapped ? 20 : hasFire ? 30 : 0
   };
   const latestAssignment = reqRecord.rescueAssignments?.[0];
+  const matchedTeam = latestAssignment ? DEMO_RESCUE_TEAMS.find((t) => t.name === latestAssignment.teamName) : null;
   return {
     id: reqRecord.id,
     citizenId: citizenUser?.id || reqRecord.householdMember?.household?.userId || "unknown",
     latitude: reqRecord.latitude,
     longitude: reqRecord.longitude,
     address: reqRecord.address || "Bengaluru",
-    description: reqRecord.description || "Urgent assistance requested",
-    peopleCount: 1,
-    childrenCount: hasChildren ? 1 : 0,
-    elderlyCount: 0,
-    disabledCount: hasDisabled ? 1 : 0,
-    injuredCount: hasInjured ? 1 : 0,
+    description: rawDesc,
+    peopleCount,
+    childrenCount,
+    elderlyCount,
+    disabledCount,
+    injuredCount,
     criticalMedicalNeed: hasCriticalMedical,
-    waterLevel: hasWaterRising ? "HIGH" : "MEDIUM",
-    emergencyType: hasTrapped ? "TRAPPED" : hasFire ? "FIRE" : "FLOOD",
+    waterLevel,
+    emergencyType,
     priorityScore: score,
     priorityLevel: level,
     status,
     priorityBreakdown: breakdown,
-    teamId: latestAssignment?.teamName || null,
-    team: latestAssignment ? {
+    teamId: matchedTeam?.id || latestAssignment?.teamName || null,
+    team: latestAssignment ? matchedTeam || {
       id: latestAssignment.id,
       name: latestAssignment.teamName,
       type: "Rapid Response Unit",
@@ -2816,49 +2969,7 @@ async function getMapRescueRequests(req, res) {
 }
 async function getAvailableRescueTeams(req, res) {
   try {
-    const defaultTeams = [
-      {
-        id: "team-ndrf-1",
-        name: "NDRF 10th Battalion Alpha",
-        type: "Aquatic Search & Rescue",
-        capacity: 8,
-        currentLatitude: 12.9352,
-        currentLongitude: 77.6245,
-        status: "AVAILABLE",
-        contactNumber: "+91 80 2297 1501"
-      },
-      {
-        id: "team-sdrf-2",
-        name: "SDRF Rapid Boat Unit Bravo",
-        type: "Inflatable Boat Team",
-        capacity: 6,
-        currentLatitude: 12.925,
-        currentLongitude: 77.5938,
-        status: "AVAILABLE",
-        contactNumber: "+91 80 2297 1502"
-      },
-      {
-        id: "team-fire-3",
-        name: "Karnataka Fire Services Rescue Charlie",
-        type: "Structural & High Water Extrication",
-        capacity: 10,
-        currentLatitude: 12.9716,
-        currentLongitude: 77.5946,
-        status: "AVAILABLE",
-        contactNumber: "+91 80 2297 1503"
-      },
-      {
-        id: "team-medical-4",
-        name: "108 Disaster Medical Triage Delta",
-        type: "Mobile Trauma Unit",
-        capacity: 4,
-        currentLatitude: 12.9304,
-        currentLongitude: 77.62,
-        status: "AVAILABLE",
-        contactNumber: "+91 80 2297 1504"
-      }
-    ];
-    res.json(defaultTeams);
+    res.json(DEMO_RESCUE_TEAMS);
   } catch (error) {
     res.status(500).json({ error: error.message || "Failed to fetch rescue teams." });
   }
@@ -2891,12 +3002,21 @@ router7.get("/rescue-requests/my", requireAuth, getMyRescueRequests);
 router7.get("/rescue-requests/:id", requireAuth, getRescueRequestByIdUnified);
 router7.patch("/rescue-requests/:id/cancel", requireAuth, cancelRescueRequest);
 router7.post("/rescue-requests/:id/cancel", requireAuth, cancelRescueRequest);
-router7.get("/authority/rescue-requests/ranked", requireAuth, getRankedRescueRequests);
-router7.get("/authority/map/rescue-requests", requireAuth, getMapRescueRequests);
+router7.get("/teams", requireAuth, getAvailableRescueTeams);
+router7.get("/teams/available", requireAuth, getAvailableRescueTeams);
 router7.get("/authority/rescue-teams/available", requireAuth, getAvailableRescueTeams);
+router7.get("/authority/rescue-requests/ranked", requireAuth, getRankedRescueRequests);
+router7.get("/authority/rescue-requests", requireAuth, getRankedRescueRequests);
+router7.get("/authority/map/rescue-requests", requireAuth, getMapRescueRequests);
 router7.post("/authority/rescue-requests/:id/assign", requireAuth, assignRescueTeam);
+router7.patch("/authority/rescue-requests/:id/status", requireAuth, updateRescueStatus);
+router7.put("/authority/rescue-requests/:id/status", requireAuth, updateRescueStatus);
 router7.get("/rescuer/missions/assigned", requireAuth, getAssignedMissions);
+router7.get("/rescuer/assignments", requireAuth, getAssignedMissions);
 router7.patch("/rescuer/missions/:id/status", requireAuth, updateRescueStatus);
+router7.patch("/rescuer/assignments/:id/status", requireAuth, updateRescueStatus);
+router7.put("/rescuer/missions/:id/status", requireAuth, updateRescueStatus);
+router7.put("/rescuer/assignments/:id/status", requireAuth, updateRescueStatus);
 router7.get("/emergency-requests/:requestId", requireAuth, getEmergencyRequestById);
 router7.put("/emergency-requests/:requestId", requireAuth, updateEmergencyRequest);
 router7.post("/emergency-requests/:requestId/assign", requireAuth, requireRole("RESCUER"), assignRescueTeam);

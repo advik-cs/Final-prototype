@@ -22,6 +22,7 @@ import {
   UserCheck,
   ChevronRight,
   Waves,
+  CloudRain,
 } from 'lucide-react';
 
 export type DisasterMode = 'BEFORE' | 'DURING' | 'FLOODX';
@@ -34,14 +35,17 @@ export type BeforeTab =
   | 'shelters'
   | 'reconfirmation'
   | 'occupancy'
-  | 'threats';
+  | 'threats'
+  | 'weather';
 
 export type DuringTab =
   | 'dashboard'
   | 'safe'
   | 'buildings'
   | 'maps'
-  | 'rescue';
+  | 'rescue'
+  | 'occupancy'
+  | 'weather';
 
 interface DashboardLayoutProps {
   user: User;
@@ -109,10 +113,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     ...(user.role === 'CITIZEN' ? [{ id: 'essentials', label: t('navigation.essentials'), icon: ShieldCheck }] : []),
     { id: 'map', label: t('navigation.map'), icon: MapIcon },
     ...(user.role !== 'AUTHORITY' ? [{ id: 'household', label: t('navigation.household'), icon: Users }] : []),
-    { id: 'shelters', label: user.role === 'AUTHORITY' ? t('navigation.shelterInfo') : t('navigation.shelters'), icon: Tent },
+    { id: 'shelters', label: user.role === 'CITIZEN' || user.role === 'AUTHORITY' ? t('navigation.shelterInfo') : t('navigation.shelters'), icon: Tent },
     ...(user.role !== 'AUTHORITY' ? [{ id: 'reconfirmation', label: t('navigation.reconfirmation'), icon: CheckCircle2 }] : []),
-    { id: 'occupancy', label: t('navigation.occupancy'), icon: Building2 },
+    ...(user.role !== 'CITIZEN' ? [{ id: 'occupancy', label: t('navigation.occupancy'), icon: Building2 }] : []),
     { id: 'threats', label: t('navigation.threats'), icon: AlertOctagon },
+    ...(user.role !== 'CITIZEN' ? [{ id: 'weather', label: t('navigation.operationalWeather') || 'Operational Weather', icon: CloudRain }] : []),
   ];
 
   const duringNavItems = [
@@ -121,6 +126,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     ...(user.role !== 'CITIZEN' ? [{ id: 'buildings', label: t('navigation.buildings'), icon: Building2 }] : []),
     { id: 'maps', label: t('navigation.maps'), icon: MapIcon },
     { id: 'rescue', label: t('navigation.rescue'), icon: Radio },
+    ...(user.role !== 'CITIZEN' ? [
+      { id: 'occupancy', label: t('navigation.occupancy'), icon: Building2 },
+      { id: 'weather', label: t('navigation.operationalWeather') || 'Operational Weather', icon: CloudRain },
+    ] : []),
   ];
 
   const isDarkSidebar = mode === 'FLOODX' && user.role !== 'CITIZEN';

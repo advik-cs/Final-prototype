@@ -65,6 +65,18 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
     return true;
   });
 
+  if (user.role === 'CITIZEN') {
+    return (
+      <div className="bg-white rounded-3xl p-8 border border-[#C8D9E6] text-center max-w-lg mx-auto mt-12 shadow-sm">
+        <Lock className="w-12 h-12 text-[#567C8D] mx-auto mb-3" />
+        <h2 className="text-xl font-bold text-[#2F4156]">Operational View Restricted</h2>
+        <p className="text-xs text-[#567C8D] mt-2">
+          Building-level expected occupancy telemetry is reserved for Emergency Command Authorities and Rescuers.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Header */}

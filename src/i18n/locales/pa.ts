@@ -180,4 +180,22 @@ export const pa: Partial<Record<TranslationKey, string>> = {
   'emergency.safe': 'ਸੁਰੱਖਿਅਤ',
   'emergency.callForHelp': 'ਮਦਦ ਲਈ ਸੰਪਰਕ ਕਰੋ',
   'emergency.submitEmergencyRequest': 'ਐਮਰਜੈਂਸੀ ਸਹਾਇਤਾ ਬੇਨਤੀ ਭੇਜੋ',
+
+  // Weather & Operational Updates
+  'navigation.operationalWeather': 'ਕਾਰਜਸ਼ੀਲ ਮੌਸਮ',
+  'shelters.informationalNotice': 'ਨਿਰਧਾਰਤ ਰਾਹਤ ਕੈਂਪ — ਐਮਰਜੈਂਸੀ ਨਿਕਾਸੀ ਜਾਣਕਾਰੀ ਡਾਇਰੈਕਟਰੀ',
+  'weather.title': 'ਬੈਂਗਲੁਰੂ ਖੇਤਰ-ਵਾਰ ਕਾਰਜਸ਼ੀਲ ਮੌਸਮ',
+  'weather.subtitle': 'ਹੜ੍ਹ ਪ੍ਰਭਾਵਿਤ ਸ਼ਹਿਰੀ ਖੇਤਰਾਂ ਵਿੱਚ ਰੀਅਲ-ਟਾਈਮ ਮੌਸਮ ਨਿਗਰਾਨੀ।',
+  'weather.monitoredRegions': '12 ਬੈਂਗਲੁਰੂ ਖੇਤਰਾਂ ਦੀ ਨਿਗਰਾਨੀ',
+  'weather.highestRainAlert': 'ਸਭ ਤੋਂ ਵੱਧ ਮੀਂਹ ਦੀ ਚਿਤਾਵਨੀ',
+  'weather.redetect': 'ਟਿਕਾਣਾ ਮੁੜ ਖੋਜੋ / ਤਾਜ਼ਾ ਕਰੋ',
+  'weather.liveConditions': 'ਲਾਈਵ ਮੌਸਮ ਸਥਿਤੀ',
+  'weather.forecast6h': 'ਅਗਲੇ 6 ਘੰਟਿਆਂ ਦੀ ਭਵਿੱਖਬਾਣੀ',
+  'weather.apparent': 'ਮਹਿਸੂਸ ਹੁੰਦਾ ਤਾਪਮਾਨ',
+  'weather.humidity': 'ਨਮੀ',
+  'weather.windSpeed': 'ਹਵਾ ਦੀ ਗਤੀ',
+  'weather.precipitation': 'ਮੀਂਹ',
+  'weather.riskElevated': 'ਮੀਂਹ ਦਾ ਵਧਿਆ ਖ਼ਤਰਾ',
+  'weather.riskNormal': 'ਆਮ / ਸਥਿਰ',
+  'weather.riskModerate': 'ਦਰਮਿਆਨੀ ਜਲ-ਜਮਾਵ ਚੌਕਸੀ',
 };

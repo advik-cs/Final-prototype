@@ -184,4 +184,22 @@ export const ta: Partial<Record<TranslationKey, string>> = {
   'emergency.safe': 'பாதுகாப்பானது',
   'emergency.callForHelp': 'உதவிக்கு அழைக்கவும்',
   'emergency.submitEmergencyRequest': 'அவசர கோரிக்கையை சமர்ப்பிக்கவும்',
+
+  // Weather & Operational Updates
+  'navigation.operationalWeather': 'செயல்பாட்டு வானிலை',
+  'shelters.informationalNotice': 'நிர்ணயிக்கப்பட்ட நிவாரண முகாம் — அவசர வெளியேற்ற தகவல் கோப்பகம்',
+  'weather.title': 'பெங்களூரு பகுதிவாரியான செயல்பாட்டு வானிலை',
+  'weather.subtitle': 'அதிக ஆபத்துள்ள நகர்ப்புற வடிகால் பகுதிகள் மற்றும் வெள்ளப் படுகைகளில் நிகழ்நேர வானிலை கண்காணிப்பு.',
+  'weather.monitoredRegions': '12 பெங்களூரு பகுதிகள் கண்காணிக்கப்படுகின்றன',
+  'weather.highestRainAlert': 'அதிகபட்ச மழை எச்சரிக்கை',
+  'weather.redetect': 'இருப்பிடத்தை மீண்டும் கண்டறி / புதுப்பி',
+  'weather.liveConditions': 'நேரலை வானிலை நிலவரம்',
+  'weather.forecast6h': 'அடுத்த 6 மணிநேர முன்னறிவிப்பு',
+  'weather.apparent': 'உணரப்படும் வெப்பநிலை',
+  'weather.humidity': 'ஈரப்பதம்',
+  'weather.windSpeed': 'காற்றின் வேகம்',
+  'weather.precipitation': 'மழைப்பொழிவு',
+  'weather.riskElevated': 'அதிகரித்த மழை ஆபத்து',
+  'weather.riskNormal': 'சாதாரண / நிலையானது',
+  'weather.riskModerate': 'மிதமான வெள்ள அபாய கண்காணிப்பு',
 };

@@ -231,4 +231,22 @@ export const as: Partial<Record<TranslationKey, string>> = {
   'emergency.safe': 'সুৰক্ষিত',
   'emergency.callForHelp': 'সহায়ৰ বাবে যোগাযোগ কৰক',
   'emergency.submitEmergencyRequest': 'জৰুৰী অনুৰোধ জমা দিয়ক',
+
+  // Weather & Operational Updates
+  'navigation.operationalWeather': 'কাৰ্যক্ষম বতৰ',
+  'shelters.informationalNotice': 'নিৰ্ধাৰিত আশ্ৰয় শিবিৰ — জৰুৰীকালীন স্থানান্তৰ তথ্য নিৰ্দেশিকা',
+  'weather.title': 'বেংগালুৰু অঞ্চলভিত্তিক কাৰ্যক্ষম বতৰ',
+  'weather.subtitle': 'বানপানী সম্ভাৱনা থকা অঞ্চলসমূহত প্ৰকৃত সময়ৰ বতৰ নিৰীক্ষণ।',
+  'weather.monitoredRegions': '১২টা বেংগালুৰু অঞ্চল নিৰীক্ষণাধীন',
+  'weather.highestRainAlert': 'সৰ্বাধিক বৰষুণৰ সতৰ্কবাণী',
+  'weather.redetect': 'স্থান পুনৰ সন্ধান কৰক / সতেজ কৰক',
+  'weather.liveConditions': 'সক্ৰিয় বতৰ পৰিস্থিতি',
+  'weather.forecast6h': 'অহা ৬ ঘণ্টাৰ পূৰ্বাভাস',
+  'weather.apparent': 'অনুভৱ হোৱা উষ্ণতা',
+  'weather.humidity': 'আৰ্দ্ৰতা',
+  'weather.windSpeed': 'বতাহৰ গতিবেগ',
+  'weather.precipitation': 'বৰষুণৰ পৰিমাণ',
+  'weather.riskElevated': 'বৰষুণৰ বৃদ্ধি পোৱা আশংকা',
+  'weather.riskNormal': 'স্বাভাৱিক / স্থিৰ',
+  'weather.riskModerate': 'মধ্যমীয়া জলমগ্নতা সতৰ୍କতা',
 };

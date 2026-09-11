@@ -177,12 +177,12 @@ export const ShelterSelectionView: React.FC<ShelterSelectionViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156] tracking-tight">
-            {user.role === 'AUTHORITY' ? 'Shelter Information' : 'Designated Safe Shelters'}
+            {t('navigation.shelterInfo')}
           </h1>
           <p className="text-sm font-medium text-[#567C8D] mt-1">
             {user.role === 'AUTHORITY'
               ? 'Real-time shelter capacities, operational status, and remaining capacity calculations.'
-              : 'Real-time expected arrivals and dynamic remaining capacity calculations.'}
+              : 'Designated relief centers, address details, and operational status directory.'}
           </p>
         </div>
 
@@ -347,19 +347,10 @@ export const ShelterSelectionView: React.FC<ShelterSelectionViewProps> = ({
                   </div>
 
                   {user.role === 'CITIZEN' && (
-                    <button
-                      type="button"
-                      disabled={assigningShelterId === shelter.id}
-                      onClick={() => handleSelectShelterForHousehold(shelter.id)}
-                      className="w-full py-2.5 px-4 rounded-xl bg-[#2F4156] hover:bg-[#1F2D3D] text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
-                    >
-                      {assigningShelterId === shelter.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C8D9E6]" />
-                      ) : (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#C8D9E6]" />
-                      )}
-                      <span>Select for Entire Family</span>
-                    </button>
+                    <div className="w-full py-2.5 px-3 rounded-xl bg-[#F5EFEB]/80 border border-[#C8D9E6]/50 text-center text-xs font-medium text-[#567C8D] flex items-center justify-center gap-1.5">
+                      <Tent className="w-3.5 h-3.5 text-[#567C8D]" />
+                      <span>{t('shelters.informationalNotice') || 'Designated relief center — Informational directory for emergency evacuation'}</span>
+                    </div>
                   )}
                 </div>
               </div>

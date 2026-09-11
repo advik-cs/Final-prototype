@@ -180,4 +180,22 @@ export const bn: Partial<Record<TranslationKey, string>> = {
   'emergency.safe': 'নিরাপদ',
   'emergency.callForHelp': 'সাহায্যের জন্য যোগাযোগ করুন',
   'emergency.submitEmergencyRequest': 'জরুরি উদ্ধার অনুরোধ পাঠান',
+
+  // Weather & Operational Updates
+  'navigation.operationalWeather': 'কার্যকরী আবহাওয়া',
+  'shelters.informationalNotice': 'নির্ধারিত ত্রাণ শিবির — জরুরি স্থানান্তরের তথ্য নির্দেশিকা',
+  'weather.title': 'বেঙ্গালুরু অঞ্চলভিত্তিক কার্যকরী আবহাওয়া',
+  'weather.subtitle': 'বন্যাপ্রবণ শহরাঞ্চলে রিয়েল-টাইম আবহাওয়া পর্যবেক্ষণ।',
+  'weather.monitoredRegions': '১২টি বেঙ্গালুরু অঞ্চল পর্যবেক্ষণাধীন',
+  'weather.highestRainAlert': 'সর্বোচ্চ বৃষ্টিপাত সতর্কতা',
+  'weather.redetect': 'অবস্থান পুনরায় খুঁজুন / রিফ্রেশ',
+  'weather.liveConditions': 'সরাসরি আবহাওয়া পরিস্থিতি',
+  'weather.forecast6h': 'পরবর্তী ৬ ঘণ্টার পূর্বাভাস',
+  'weather.apparent': 'অনূভূত তাপমাত্রা',
+  'weather.humidity': 'আর্দ্রতা',
+  'weather.windSpeed': 'বাতাসের গতি',
+  'weather.precipitation': 'বৃষ্টিপাত',
+  'weather.riskElevated': 'উচ্চ বৃষ্টিপাতের ঝুঁকি',
+  'weather.riskNormal': 'স্বাভাবিক / স্থিতিশীল',
+  'weather.riskModerate': 'মাঝারি জলমগ্নতা সতর্কতা',
 };

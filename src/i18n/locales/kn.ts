@@ -228,4 +228,22 @@ export const kn: Partial<Record<TranslationKey, string>> = {
   'emergency.safe': 'ಸುರಕ್ಷಿತ',
   'emergency.callForHelp': 'ಸಹಾಯಕ್ಕಾಗಿ ಕರೆ ಮಾಡಿ',
   'emergency.submitEmergencyRequest': 'ತುರ್ತು ರಕ್ಷಣಾ ವಿನಂತಿ ಸಲ್ಲಿಸಿ',
+
+  // Weather & Operational Updates
+  'navigation.operationalWeather': 'ಕಾರ್ಯಾಚರಣೆಯ ಹವಾಮಾನ',
+  'shelters.informationalNotice': 'ಗೊತ್ತುಪಡಿಸಿದ ಪರಿಹಾರ ಕೇಂದ್ರ — ತುರ್ತು ಸ್ಥಳಾಂತರ ಮಾಹಿತಿ ಕೋಶ',
+  'weather.title': 'ಬೆಂಗಳೂರು ಪ್ರದೇಶವಾರು ಕಾರ್ಯಾಚರಣೆಯ ಹವಾಮಾನ',
+  'weather.subtitle': 'ಹೆಚ್ಚಿನ ಅಪಾಯದ ನಗರ ಜಲಾನಯನ ಪ್ರದೇಶಗಳು ಮತ್ತು ಪ್ರವಾಹ ತಗ್ಗುಗಳಲ್ಲಿ ನೈಜ-ಸಮಯದ ಹವಾಮಾನ ನಿಗಾ.',
+  'weather.monitoredRegions': '12 ಬೆಂಗಳೂರು ಪ್ರದೇಶಗಳ ಮೇಲ್ವಿಚಾರಣೆ',
+  'weather.highestRainAlert': 'ಗರಿಷ್ಠ ಮಳೆ ಎಚ್ಚರಿಕೆ',
+  'weather.redetect': 'ಸ್ಥಳ ಮರುಪತ್ತೆ / ನವೀಕರಿಸಿ',
+  'weather.liveConditions': 'ಲೈವ್ ಹವಾಮಾನ ಸ್ಥಿತಿ',
+  'weather.forecast6h': 'ಮುಂದಿನ 6 ಗಂಟೆಗಳ ಮುನ್ಸೂಚನೆ',
+  'weather.apparent': 'ಅನುಭವವಾಗುವ ತಾಪಮಾನ',
+  'weather.humidity': 'ಆರ್ದ್ರತೆ',
+  'weather.windSpeed': 'ಗಾಳಿಯ ವೇಗ',
+  'weather.precipitation': 'ಮಳೆ ಪ್ರಮಾಣ',
+  'weather.riskElevated': 'ಹೆಚ್ಚಿದ ಮಳೆ ಅಪಾಯ',
+  'weather.riskNormal': 'ಸಾಮಾನ್ಯ / ಸ್ಥಿರ',
+  'weather.riskModerate': 'ಮಧ್ಯಮ ಜಲಾವೃತ ನಿಗಾ',
 };

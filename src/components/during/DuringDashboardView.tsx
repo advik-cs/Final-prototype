@@ -3,6 +3,7 @@ import { emergencyService, CommunityStatus } from '../../services/emergencyServi
 import { DisasterEvent } from '../../services/disasterService.ts';
 import { User } from '../../services/authService.ts';
 import { DuringTab } from '../layout/DashboardLayout.tsx';
+import { LiveWeatherCard } from '../common/LiveWeatherCard.tsx';
 import {
   LifeBuoy,
   AlertTriangle,
@@ -87,6 +88,11 @@ export const DuringDashboardView: React.FC<DuringDashboardViewProps> = ({
           <span>Report Safety / Request SOS</span>
         </button>
       </div>
+
+      {/* Citizen Live Weather */}
+      {user.role === 'CITIZEN' && (
+        <LiveWeatherCard />
+      )}
 
       {/* 3 LARGE CLEAN COMMUNITY STATUS CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

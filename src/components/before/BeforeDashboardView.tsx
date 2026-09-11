@@ -196,7 +196,7 @@ export const BeforeDashboardView: React.FC<BeforeDashboardViewProps> = ({
             </button>
           </div>
           <p className="text-xs font-bold uppercase tracking-wider text-[#567C8D]">
-            {isAuthority ? 'Shelter Information' : 'Designated Shelters'}
+            Shelter Information
           </p>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-3xl font-bold font-['Space_Grotesk',sans-serif] text-[#2F4156]">

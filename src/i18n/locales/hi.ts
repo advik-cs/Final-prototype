@@ -228,4 +228,22 @@ export const hi: Partial<Record<TranslationKey, string>> = {
   'emergency.safe': 'सुरक्षित',
   'emergency.callForHelp': 'सहायता हेतु कॉल करें',
   'emergency.submitEmergencyRequest': 'आपातकालीन सहायता अनुरोध भेजें',
+
+  // Weather & Operational Updates
+  'navigation.operationalWeather': 'परिचालन मौसम',
+  'shelters.informationalNotice': 'नामित राहत केंद्र — आपातकालीन निकासी हेतु सूचनात्मक निर्देशिका',
+  'weather.title': 'बेंगलुरु क्षेत्र-वार परिचालन मौसम',
+  'weather.subtitle': 'उच्च जोखिम वाले शहरी जलग्रहण क्षेत्रों और बाढ़ घाटियों में वास्तविक समय मौसम निगरानी।',
+  'weather.monitoredRegions': '12 बेंगलुरु क्षेत्र निगरानी में',
+  'weather.highestRainAlert': 'सर्वाधिक वर्षा चेतावनी',
+  'weather.redetect': 'स्थान पुनः जांचें / रीफ्रेश करें',
+  'weather.liveConditions': 'सक्रिय मौसम स्थिति',
+  'weather.forecast6h': 'अगले 6 घंटे का पूर्वानुमान',
+  'weather.apparent': 'अनुभूत तापमान',
+  'weather.humidity': 'आर्द्रता',
+  'weather.windSpeed': 'हवा की गति',
+  'weather.precipitation': 'वर्षा',
+  'weather.riskElevated': 'वर्षा का बढ़ता जोखिम',
+  'weather.riskNormal': 'सामान्य / स्थिर',
+  'weather.riskModerate': 'मध्यम जलभराव निगरानी',
 };

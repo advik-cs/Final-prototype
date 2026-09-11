@@ -1020,41 +1020,137 @@ async function main() {
       },
     });
 
-    // Create Emergency Request for select distress members
-    if (status === 'IN_DISTRESS' && i % 2 === 0) {
-      const isTrapped = i % 3 === 0;
-      const isWaterRising = i % 2 === 0;
+  }
 
-      const req = await prisma.emergencyRequest.create({
+  // 9b. Seed realistic prioritized rescue requests across Bengaluru
+  const demoRescueRequests = [
+    {
+      score: 95,
+      status: 'PENDING',
+      address: 'Plot 412, 14th Main, HSR Layout Sector 6, near Agara Lake breach',
+      lat: 12.9152,
+      lng: 77.6385,
+      desc: '[P:5, C:2, E:1, D:0, I:1, W:CHEST_LEVEL, T:FLOOD_TRAPPED] Ground floor apartment submerged under 5.5ft floodwaters. Diabetic elderly resident requires oxygen cylinder and 2 infants trapped on upper shelf.',
+      conditions: ['WATER_RISING', 'SERIOUSLY_UNWELL', 'TRAPPED', 'CHILDREN_INFANTS_PRESENT', 'HEAVILY_INJURED'],
+      assignment: null,
+    },
+    {
+      score: 85,
+      status: 'TEAM_ASSIGNED',
+      address: 'Villa 28, Rainbow Drive Layout, Sarjapur Road',
+      lat: 12.9180,
+      lng: 77.6840,
+      desc: '[P:3, C:0, E:1, D:1, I:1, W:CHEST_LEVEL, T:FLOOD_TRAPPED] Wheelchair-bound resident with severe head injury from collapsing compound wall. Rapid water ingress into ground living room.',
+      conditions: ['WATER_RISING', 'HEAVILY_INJURED', 'PHYSICALLY_DISABLED', 'TRAPPED'],
+      assignment: {
+        teamName: 'NDRF 10th Battalion — Alpha Flood Squad',
+        notes: 'Aquatic rescue team deployed with Gemini motorized inflatable boat and paramedic.',
+        status: 'TEAM_ASSIGNED',
+      },
+    },
+    {
+      score: 70,
+      status: 'IN_PROGRESS',
+      address: 'Flat 104, Sai Nivas, ST Bed Layout, Koramangala 4th Block',
+      lat: 12.9344,
+      lng: 77.6280,
+      desc: '[P:4, C:1, E:1, D:0, I:0, W:WAIST_LEVEL, T:FLOOD] Stormwater drain overflowed into basement parking and ground floor corridor. Evacuation boat required for mother and toddler.',
+      conditions: ['WATER_RISING', 'CHILDREN_INFANTS_PRESENT', 'NEED_RESCUE'],
+      assignment: {
+        teamName: 'Karnataka SDRF — Bravo Quick Response Team',
+        notes: 'SDRF boat unit in transit through Ejipura junction; ETA 8 minutes.',
+        status: 'IN_PROGRESS',
+      },
+    },
+    {
+      score: 60,
+      status: 'TEAM_ASSIGNED',
+      address: 'Basement Level -1, Block 2B, Ecospace Business Park, Bellandur',
+      lat: 12.9260,
+      lng: 77.6810,
+      desc: '[P:6, C:0, E:0, D:0, I:1, W:WAIST_LEVEL, T:TRAPPED] Shift workers stranded in basement cafeteria after outer perimeter wall gave way. Water waist deep with floating electrical debris.',
+      conditions: ['TRAPPED', 'NEED_RESCUE'],
+      assignment: {
+        teamName: 'Bengaluru Fire & Emergency Services — Unit Charlie',
+        notes: 'High-clearance rescue tender en route with de-watering pumps and hydraulic tools.',
+        status: 'TEAM_ASSIGNED',
+      },
+    },
+    {
+      score: 45,
+      status: 'PENDING',
+      address: 'House 88, 3rd Cross, Sai Layout, Horamavu / KR Puram',
+      lat: 13.0280,
+      lng: 77.6580,
+      desc: '[P:3, C:0, E:1, D:0, I:0, W:KNEE_LEVEL, T:FLOOD] Lake boundary overflow inundating residential lane. Ground floor knee-deep; elderly couple needs safe transfer to higher ground shelter.',
+      conditions: ['WATER_RISING', 'NEED_RESCUE'],
+      assignment: null,
+    },
+    {
+      score: 35,
+      status: 'PENDING',
+      address: 'Building 12, Munnekolala Main Road, Marathahalli',
+      lat: 12.9510,
+      lng: 77.7120,
+      desc: '[P:2, C:0, E:0, D:0, I:0, W:KNEE_LEVEL, T:FLOOD] Waterlogged street blocking exit. Power cutoff and low battery; requesting boat evacuation before nightfall.',
+      conditions: ['NEED_RESCUE', 'OTHER'],
+      assignment: null,
+    },
+    {
+      score: 20,
+      status: 'PENDING',
+      address: 'House 56, 5th Main, HRBR Layout 2nd Block, Kalyan Nagar',
+      lat: 13.0180,
+      lng: 77.6480,
+      desc: '[P:2, C:0, E:0, D:0, I:0, W:ANKLE_LEVEL, T:FLOOD] Minor street inundation reaching driveway. Family prepared to self-evacuate if rain intensifies; requesting standby guidance.',
+      conditions: ['OTHER'],
+      assignment: null,
+    },
+    {
+      score: 15,
+      status: 'PENDING',
+      address: 'Bungalow 7, Dollars Colony, RMV 2nd Stage',
+      lat: 13.0320,
+      lng: 77.5750,
+      desc: '[P:1, C:0, E:0, D:0, I:0, W:ANKLE_LEVEL, T:FLOOD] Water accumulation in storm drain causing mild backflow into garden. Requesting municipal drainage team inspection.',
+      conditions: ['OTHER'],
+      assignment: null,
+    },
+  ];
+
+  for (let idx = 0; idx < demoRescueRequests.length; idx++) {
+    const item = demoRescueRequests[idx];
+    const targetMember = allCreatedMembers[idx] || allCreatedMembers[0];
+
+    const req = await prisma.emergencyRequest.create({
+      data: {
+        disasterId: primaryDisaster.id,
+        householdMemberId: targetMember.member.id,
+        latitude: item.lat,
+        longitude: item.lng,
+        address: item.address,
+        description: item.desc,
+        priorityScore: item.score,
+        rescueStatus: item.status,
+      },
+    });
+
+    for (const cond of item.conditions) {
+      await prisma.emergencyCondition.create({
+        data: { emergencyRequestId: req.id, conditionType: cond },
+      });
+    }
+
+    if (item.assignment) {
+      await prisma.rescueAssignment.create({
         data: {
-          disasterId: primaryDisaster.id,
-          householdMemberId: item.member.id,
-          latitude: item.config.lat + 0.001 * (i % 3),
-          longitude: item.config.lng + 0.001 * (i % 3),
-          address: item.config.address,
-          description: isWaterRising
-            ? 'Water level rising rapidly on ground floor, elderly resident present.'
-            : 'Submerged access pathway, evacuation support needed.',
-          priorityScore: 75,
-          rescueStatus: 'PENDING',
+          emergencyRequestId: req.id,
+          teamName: item.assignment.teamName,
+          assignedByUserId: rescuerCommander.id,
+          status: item.assignment.status,
+          notes: item.assignment.notes,
         },
       });
-
-      if (isTrapped) {
-        await prisma.emergencyCondition.create({
-          data: { emergencyRequestId: req.id, conditionType: 'TRAPPED' },
-        });
-      }
-      if (isWaterRising) {
-        await prisma.emergencyCondition.create({
-          data: { emergencyRequestId: req.id, conditionType: 'WATER_RISING' },
-        });
-      }
-      if (item.member.category === 'ELDERLY') {
-        await prisma.emergencyCondition.create({
-          data: { emergencyRequestId: req.id, conditionType: 'SERIOUSLY_UNWELL' },
-        });
-      }
     }
   }
 

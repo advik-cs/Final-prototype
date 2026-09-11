@@ -79,6 +79,7 @@ export const en = {
   'navigation.reconfirmation': 'Reconfirmation',
   'navigation.occupancy': 'Expected Occupancy',
   'navigation.threats': 'Predicted Threats',
+  'navigation.operationalWeather': 'Operational Weather',
   'navigation.duringDashboard': 'Dashboard / Community',
   'navigation.safe': 'Are You Safe?',
   'navigation.buildings': 'Buildings',
@@ -262,6 +263,23 @@ export const en = {
   'shelters.nearCapacity': 'Near Capacity',
   'shelters.overCapacity': 'Over Capacity',
   'shelters.contact': 'Contact',
+  'shelters.informationalNotice': 'Designated relief center — Informational directory for emergency evacuation',
+
+  // Weather Intelligence
+  'weather.title': 'Bengaluru Area-Wise Operational Weather',
+  'weather.subtitle': 'Real-time meteorological monitoring across high-risk urban catchment zones and flood basins.',
+  'weather.monitoredRegions': '12 Bengaluru regions monitored',
+  'weather.highestRainAlert': 'Highest Rain Alert',
+  'weather.redetect': 'Redetect Location / Refresh',
+  'weather.liveConditions': 'Live Meteorological Conditions',
+  'weather.forecast6h': 'Next 6-Hour Forecast',
+  'weather.apparent': 'Feels like',
+  'weather.humidity': 'Humidity',
+  'weather.windSpeed': 'Wind Speed',
+  'weather.precipitation': 'Precipitation',
+  'weather.riskElevated': 'Elevated Rain Risk',
+  'weather.riskNormal': 'Normal / Stable',
+  'weather.riskModerate': 'Moderate Inundation Watch',
 
   // Predicted Threats
   'threats.title': 'Predicted Threats',

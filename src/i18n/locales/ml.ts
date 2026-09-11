@@ -180,4 +180,22 @@ export const ml: Partial<Record<TranslationKey, string>> = {
   'emergency.safe': 'സുരക്ഷിതം',
   'emergency.callForHelp': 'സഹായത്തിനായി വിളിക്കുക',
   'emergency.submitEmergencyRequest': 'അടിയന്തര സഹായം അഭ്യർത്ഥിക്കുക',
+
+  // Weather & Operational Updates
+  'navigation.operationalWeather': 'ഓപ്പറേഷണൽ കാലാവസ്ഥ',
+  'shelters.informationalNotice': 'നിശ്ചയിക്കപ്പെട്ട ദുരിതാശ്വാസ കേന്ദ്രം — അടിയന്തര ഒഴിപ്പിക്കൽ വിവര ഡയറക്ടറി',
+  'weather.title': 'ബെംഗളൂരു മേഖലാടിസ്ഥാനത്തിലുള്ള കാലാവസ്ഥ',
+  'weather.subtitle': 'വെള്ളപ്പൊക്ക സാധ്യതയുള്ള പ്രദേശങ്ങളിലെ തത്സമയ കാലാവസ്ഥാ നിരീക്ഷണം.',
+  'weather.monitoredRegions': '12 ബെംഗളൂരു മേഖലകൾ നിരീക്ഷണത്തിൽ',
+  'weather.highestRainAlert': 'പരമാവധി മഴ മുന്നറിയിപ്പ്',
+  'weather.redetect': 'ലൊക്കേഷൻ വീണ്ടും കണ്ടെത്തുക / പുതുക്കുക',
+  'weather.liveConditions': 'തത്സമയ കാലാവസ്ഥാ വിവരങ്ങൾ',
+  'weather.forecast6h': 'അടുത്ത 6 മണിക്കൂർ പ്രവചനം',
+  'weather.apparent': 'അനുഭവപ്പെടുന്ന താപനില',
+  'weather.humidity': 'ഈർപ്പം',
+  'weather.windSpeed': 'കാറ്റിന്റെ വേഗത',
+  'weather.precipitation': 'മഴയുടെ അളവ്',
+  'weather.riskElevated': 'ഉയർന്ന മഴ സാധ്യത',
+  'weather.riskNormal': 'സാധാരണം / സുസ്ഥിരം',
+  'weather.riskModerate': 'മിതമായ വെള്ളപ്പൊക്ക നിരീക്ഷണം',
 };

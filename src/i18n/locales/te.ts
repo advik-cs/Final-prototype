@@ -184,4 +184,22 @@ export const te: Partial<Record<TranslationKey, string>> = {
   'emergency.safe': 'సురక్షితం',
   'emergency.callForHelp': 'సహాయం కోసం కాల్ చేయండి',
   'emergency.submitEmergencyRequest': 'అత్యవసర అభ్యర్థనను పంపండి',
+
+  // Weather & Operational Updates
+  'navigation.operationalWeather': 'కార్యాచరణ వాతావరణం',
+  'shelters.informationalNotice': 'కేటాయించిన పునరావాస కేంద్రం — అత్యవసర తరలింపు సమాచార డైరెక్టరీ',
+  'weather.title': 'బెంగళూరు ప్రాంతాల వారీగా కార్యాచరణ వాతావరణం',
+  'weather.subtitle': 'ముంపు ప్రభావిత పట్టణ పరీవాహక ప్రాంతాలలో రియల్-టైమ్ వాతావరణ పర్యవేక్షణ.',
+  'weather.monitoredRegions': '12 బెంగళూరు ప్రాంతాలు పర్యవేక్షించబడుతున్నాయి',
+  'weather.highestRainAlert': 'గరిష్ట వర్షపాత హెచ్చరిక',
+  'weather.redetect': 'లొకేషన్ తిరిగి గుర్తించండి / రీఫ్రెష్',
+  'weather.liveConditions': 'లైవ్ వాతావరణ పరిస్థితులు',
+  'weather.forecast6h': 'తదుపరి 6 గంటల సూచన',
+  'weather.apparent': 'అనిపించే ఉష్ణోగ్రత',
+  'weather.humidity': 'తేమ',
+  'weather.windSpeed': 'గాలి వేగం',
+  'weather.precipitation': 'వర్షపాతం',
+  'weather.riskElevated': 'ఎక్కువ వర్షపు ప్రమాదం',
+  'weather.riskNormal': 'సాధారణం / స్థిరం',
+  'weather.riskModerate': 'మధ్యస్థ వరద పర్యవేక్షణ',
 };

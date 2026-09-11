@@ -180,4 +180,22 @@ export const gu: Partial<Record<TranslationKey, string>> = {
   'emergency.safe': 'સુરક્ષિત',
   'emergency.callForHelp': 'મદદ માટે કૉલ કરો',
   'emergency.submitEmergencyRequest': 'કટોકટી સહાય વિનંતી મોકલો',
+
+  // Weather & Operational Updates
+  'navigation.operationalWeather': 'ઓપરેશનલ હવામાન',
+  'shelters.informationalNotice': 'નિયુક્ત રાહત કેન્દ્ર — કટોકટી સ્થળાંતર માહિતી નિર્દેશિકા',
+  'weather.title': 'બેંગલુરુ વિસ્તાર મુજબ ઓપરેશનલ હવામાન',
+  'weather.subtitle': 'પૂર સંવેદનશીલ શહેરી વિસ્તારોમાં વાસ્તવિક સમયનું હવામાન નિરીક્ષણ.',
+  'weather.monitoredRegions': '12 બેંગલુરુ વિસ્તારો પર નજર',
+  'weather.highestRainAlert': 'મહત્તમ વરસાદની ચેતવણી',
+  'weather.redetect': 'સ્થળ ફરીથી શોધો / તાજું કરો',
+  'weather.liveConditions': 'લાઇવ હવામાન સ્થિતિ',
+  'weather.forecast6h': 'આગામી 6 કલાકની આગાહી',
+  'weather.apparent': 'અનુભવાતું તાપમાન',
+  'weather.humidity': 'ભેજ',
+  'weather.windSpeed': 'પવનની ગતિ',
+  'weather.precipitation': 'વરસાદ',
+  'weather.riskElevated': 'વધતો વરસાદી ભય',
+  'weather.riskNormal': 'સામાન્ય / સ્થિર',
+  'weather.riskModerate': 'મધ્યમ જળબંબાકાર નિરીક્ષણ',
 };
