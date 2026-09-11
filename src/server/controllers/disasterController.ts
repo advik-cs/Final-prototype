@@ -157,9 +157,16 @@ export async function addAffectedZone(req: AuthenticatedRequest, res: Response):
 export async function getAffectedZones(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id: disasterId } = req.params;
-    const zones = await prisma.affectedZone.findMany({
+    let zones = await prisma.affectedZone.findMany({
       where: { disasterId },
     });
+    if (zones.length === 0) {
+      zones = await prisma.affectedZone.findMany({
+        where: {
+          disaster: { status: { in: ['ACTIVE', 'PREDICTED'] } },
+        },
+      });
+    }
     res.json(zones);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch affected zones.' });
@@ -207,8 +214,20 @@ export async function deleteAffectedZone(req: AuthenticatedRequest, res: Respons
 export async function getAffectedHouseholds(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id: disasterId } = req.params;
-    const zones = await prisma.affectedZone.findMany({ where: { disasterId } });
+    let zones = await prisma.affectedZone.findMany({ where: { disasterId } });
+    if (zones.length === 0) {
+      zones = await prisma.affectedZone.findMany({
+        where: {
+          disaster: { status: { in: ['ACTIVE', 'PREDICTED'] } },
+        },
+      });
+    }
     const households = await prisma.household.findMany({
+      where: {
+        NOT: {
+          name: { contains: "'s Residence" },
+        },
+      },
       include: {
         members: {
           include: {
@@ -391,18 +410,26 @@ export async function updateSingleExpectedLocation(
 export async function getBuildingIntelligence(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id: disasterId } = req.params;
-    const zones = await prisma.affectedZone.findMany({ where: { disasterId } });
+    let zones = await prisma.affectedZone.findMany({ where: { disasterId } });
+    if (zones.length === 0) {
+      zones = await prisma.affectedZone.findMany({
+        where: {
+          disaster: { status: { in: ['ACTIVE', 'PREDICTED'] } },
+        },
+      });
+    }
 
     const households = await prisma.household.findMany({
+      where: {
+        NOT: {
+          name: { contains: "'s Residence" },
+        },
+      },
       include: {
         members: {
           include: {
-            expectedLocations: {
-              where: { disasterId },
-            },
-            emergencyStatuses: {
-              where: { disasterId },
-            },
+            expectedLocations: true,
+            emergencyStatuses: true,
             emergencyRequests: {
               where: { disasterId },
               include: { conditions: true, rescueAssignments: true },
@@ -422,13 +449,35 @@ export async function getBuildingIntelligence(req: AuthenticatedRequest, res: Re
         let riskLevel = 'LOW';
         let matchedZoneName = 'Safe Zone';
 
+        const matchedZones: typeof zones = [];
         for (const zone of zones) {
           if (isLocationInAffectedZone(h.latitude, h.longitude, zone.polygonGeoJson, zone.radiusKm)) {
-            isAffected = true;
-            riskLevel = zone.riskLevel;
-            matchedZoneName = zone.name;
-            break;
+            matchedZones.push(zone);
           }
+        }
+
+        if (matchedZones.length > 0) {
+          isAffected = true;
+          const hasRed = matchedZones.find(
+            (z) => z.riskLevel === 'RED' || z.riskLevel === 'HIGH' || z.riskLevel === 'EXTREME'
+          );
+          const hasOrange = matchedZones.find(
+            (z) => z.riskLevel === 'ORANGE' || z.riskLevel === 'MEDIUM'
+          );
+          if (hasRed) {
+            riskLevel = 'RED';
+            matchedZoneName = hasRed.name;
+          } else if (hasOrange) {
+            riskLevel = 'ORANGE';
+            matchedZoneName = hasOrange.name;
+          } else {
+            riskLevel = matchedZones[0].riskLevel;
+            matchedZoneName = matchedZones[0].name;
+          }
+        } else {
+          isAffected = false;
+          riskLevel = 'SAFE';
+          matchedZoneName = 'Safe Zone';
         }
 
         buildingMap[bName] = {
@@ -464,7 +513,7 @@ export async function getBuildingIntelligence(req: AuthenticatedRequest, res: Re
         else if (m.category === 'ELDERLY') b.elderly++;
 
         // BEFORE calculations
-        const exp = m.expectedLocations[0];
+        const exp = m.expectedLocations.find((e) => e.disasterId === disasterId) || m.expectedLocations[0];
         if (!exp || exp.expectedType === 'UNKNOWN') {
           b.unknown++;
         } else if (exp.expectedType === 'HOME') {
@@ -477,7 +526,7 @@ export async function getBuildingIntelligence(req: AuthenticatedRequest, res: Re
         }
 
         // DURING calculations
-        const em = m.emergencyStatuses[0];
+        const em = m.emergencyStatuses.find((s) => s.disasterId === disasterId) || m.emergencyStatuses[0];
         if (!em || em.status === 'UNACCOUNTED') {
           b.unaccounted++;
         } else if (em.status === 'SAFE') {
@@ -504,15 +553,25 @@ export async function getBuildingIntelligence(req: AuthenticatedRequest, res: Re
 export async function getZoneSummary(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { id: disasterId } = req.params;
-    const zones = await prisma.affectedZone.findMany({ where: { disasterId } });
+    let zones = await prisma.affectedZone.findMany({ where: { disasterId } });
+    if (zones.length === 0) {
+      zones = await prisma.affectedZone.findMany({
+        where: {
+          disaster: { status: { in: ['ACTIVE', 'PREDICTED'] } },
+        },
+      });
+    }
 
     const households = await prisma.household.findMany({
+      where: {
+        NOT: {
+          name: { contains: "'s Residence" },
+        },
+      },
       include: {
         members: {
           include: {
-            expectedLocations: {
-              where: { disasterId },
-            },
+            expectedLocations: true,
           },
         },
       },

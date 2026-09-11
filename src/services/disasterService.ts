@@ -32,10 +32,15 @@ export const disasterService = {
     const list = await beforeApi.getZones(disasterId);
     return (list || []).map((z: any) => ({
       id: z.id,
-      disasterId: z.disasterEventId || disasterId,
+      disasterId: z.disasterId || z.disasterEventId || disasterId,
       name: z.name,
-      riskLevel: z.alertLevel || z.riskLevel || 'HIGH',
-      polygonGeoJson: typeof z.boundaryCoordinates === 'string' ? z.boundaryCoordinates : JSON.stringify(z.boundaryCoordinates || []),
+      riskLevel: z.riskLevel || z.alertLevel || 'HIGH',
+      polygonGeoJson:
+        typeof z.polygonGeoJson === 'string'
+          ? z.polygonGeoJson
+          : typeof z.boundaryCoordinates === 'string'
+          ? z.boundaryCoordinates
+          : JSON.stringify(z.polygonGeoJson || z.boundaryCoordinates || []),
       radiusKm: z.radiusKm || 5.0,
     }));
   },

@@ -649,16 +649,18 @@ async function main() {
     },
   ];
 
-  for (const z of zonesData) {
-    await prisma.affectedZone.create({
-      data: {
-        disasterId: primaryDisaster.id,
-        name: z.name,
-        riskLevel: z.riskLevel,
-        polygonGeoJson: z.polygonGeoJson,
-        radiusKm: z.radiusKm,
-      },
-    });
+  for (const did of [primaryDisaster.id, 'bd8b980a-028e-4057-af29-a70e76b13ed2']) {
+    for (const z of zonesData) {
+      await prisma.affectedZone.create({
+        data: {
+          disasterId: did,
+          name: z.name,
+          riskLevel: z.riskLevel,
+          polygonGeoJson: z.polygonGeoJson,
+          radiusKm: z.radiusKm,
+        },
+      });
+    }
   }
 
   // 8. Households & Members (Exactly 16 Canonical Residential Buildings in Bengaluru)
@@ -939,87 +941,105 @@ async function main() {
     }
   }
 
-  // 9. Expected Locations demonstrating exact distribution across all 14 shelters:
-  // - 2 OVER_CAPACITY (arrivals > capacity)
-  // - 7 NEAR_CAPACITY (arrivals close to capacity: 87.5% - 92%)
-  // - 5 AVAILABLE (arrivals well within capacity: 20% - 25%)
-  const shelterDistribution = [
-    // 2 Over Capacity
-    { shelterId: '00000000-0000-0000-0000-000000000103', target: 48 }, // Mangaldhama (cap 40) -> 120% full
-    { shelterId: '00000000-0000-0000-0000-000000000102', target: 52 }, // Vailankanni (cap 45) -> 115.5% full
+  // 9. Expected Locations with deterministic, realistic per-building occupancy:
+  // - Small households (2-5): 2 staying home
+  // - Medium/Large apartments in RED zones: 15-19 staying home (evacuation prioritized)
+  // - Medium/Large apartments in ORANGE zones: 21-25 staying home
+  // - Safe zones: 35-38 staying home
+  const buildingPlanTargets: Record<string, { home: number; shelter: number; otherCity: number; unknown: number }> = {
+    // 6 RED Zones (High Risk Flood Plain)
+    'Palm Meadows Villa 101': { home: 2, shelter: 2, otherCity: 1, unknown: 0 }, // total 5
+    'Salarpuria Sattva Greenage': { home: 18, shelter: 28, otherCity: 7, unknown: 3 }, // total 56
+    'Prestige Shantiniketan': { home: 16, shelter: 30, otherCity: 8, unknown: 3 }, // total 57
+    'Brigade Gateway Apartments': { home: 19, shelter: 28, otherCity: 8, unknown: 3 }, // total 58
+    'Prestige Falaknuma': { home: 15, shelter: 29, otherCity: 7, unknown: 3 }, // total 54
+    'Sobha Dream Acres': { home: 17, shelter: 28, otherCity: 7, unknown: 3 }, // total 55
 
-    // 7 Near Capacity
-    { shelterId: '00000000-0000-0000-0000-000000000108', target: 50 }, // Ambedkar (cap 55) -> 90.9% full
-    { shelterId: '00000000-0000-0000-0000-000000000109', target: 54 }, // Sahakara Nagar (cap 60) -> 90.0% full
-    { shelterId: '00000000-0000-0000-0000-000000000110', target: 46 }, // Verdant Hall (cap 50) -> 92.0% full
-    { shelterId: '00000000-0000-0000-0000-000000000111', target: 45 }, // Kempapura (cap 50) -> 90.0% full
-    { shelterId: '00000000-0000-0000-0000-000000000112', target: 41 }, // ECC Centre (cap 45) -> 91.1% full
-    { shelterId: '00000000-0000-0000-0000-000000000113', target: 36 }, // St. John's CC (cap 40) -> 90.0% full
-    { shelterId: '00000000-0000-0000-0000-000000000114', target: 35 }, // Ideal Homes (cap 40) -> 87.5% full
+    // 6 ORANGE Zones (Moderate Risk Overflow)
+    'Bhartiya City Nikoo Homes': { home: 24, shelter: 20, otherCity: 7, unknown: 3 }, // total 54
+    'Embassy Lake Terraces': { home: 22, shelter: 18, otherCity: 6, unknown: 2 }, // total 48
+    'Godrej Woodsman Estate': { home: 21, shelter: 17, otherCity: 6, unknown: 2 }, // total 46
+    'Mantri Webcity': { home: 25, shelter: 19, otherCity: 7, unknown: 3 }, // total 54
+    'Purva Skywood': { home: 23, shelter: 18, otherCity: 6, unknown: 3 }, // total 50
+    'RMZ Latitude': { home: 24, shelter: 19, otherCity: 6, unknown: 3 }, // total 52
 
-    // 5 Available
-    { shelterId: '00000000-0000-0000-0000-000000000101', target: 25 }, // Koramangala (cap 1000) -> 2.5% full
-    { shelterId: '00000000-0000-0000-0000-000000000104', target: 30 }, // Chinnaswamy (cap 2000) -> 1.5% full
-    { shelterId: '00000000-0000-0000-0000-000000000105', target: 25 }, // Kanteerava (cap 1500) -> 1.7% full
-    { shelterId: '00000000-0000-0000-0000-000000000106', target: 20 }, // Kempegowda (cap 900) -> 2.2% full
-    { shelterId: '00000000-0000-0000-0000-000000000107', target: 20 }, // Vajpayee (cap 800) -> 2.5% full
-  ];
+    // 4 SAFE Areas (Unaffected)
+    'Brigade Millennium': { home: 38, shelter: 8, otherCity: 5, unknown: 2 }, // total 53
+    'Phoenix One Bangalore West': { home: 37, shelter: 8, otherCity: 5, unknown: 2 }, // total 52
+    'SNN Raj Serenity': { home: 35, shelter: 8, otherCity: 4, unknown: 2 }, // total 49
+    'Total Environment Windmills of Your Mind': { home: 36, shelter: 8, otherCity: 4, unknown: 2 }, // total 50
+  };
 
-  // Flatten shelter assignments into a deterministic queue
-  const assignedShelterQueue: string[] = [];
-  for (const dist of shelterDistribution) {
-    for (let count = 0; count < dist.target; count++) {
-      assignedShelterQueue.push(dist.shelterId);
-    }
+  const OTHER_CITIES = ['Mysuru', 'Chennai', 'Hyderabad', 'Coimbatore', 'Mangaluru'];
+  let shelterIndex = 0;
+  let otherCityIndex = 0;
+
+  // Group created members by building name
+  const membersByBuilding: Record<string, typeof allCreatedMembers> = {};
+  for (const item of allCreatedMembers) {
+    const bName = item.config.name;
+    if (!membersByBuilding[bName]) membersByBuilding[bName] = [];
+    membersByBuilding[bName].push(item);
   }
 
-  for (let i = 0; i < allCreatedMembers.length; i++) {
-    const item = allCreatedMembers[i];
-    let expectedType = 'HOME';
-    let shelterId: string | null = null;
-    let otherCity: string | null = null;
+  for (const [bName, members] of Object.entries(membersByBuilding)) {
+    const plan = buildingPlanTargets[bName] || { home: Math.floor(members.length * 0.4), shelter: Math.floor(members.length * 0.4), otherCity: Math.floor(members.length * 0.15), unknown: members.length - Math.floor(members.length * 0.95) };
+    let assignedHome = 0;
+    let assignedShelter = 0;
+    let assignedOther = 0;
 
-    if (i < assignedShelterQueue.length) {
-      expectedType = 'SHELTER';
-      shelterId = assignedShelterQueue[i];
-    } else if (i % 11 === 0) {
-      expectedType = 'OTHER_CITY';
-      otherCity = 'Mysuru';
-    } else if (i % 17 === 0) {
-      expectedType = 'UNKNOWN';
-    } else {
-      expectedType = 'HOME';
-    }
+    for (let i = 0; i < members.length; i++) {
+      const item = members[i];
+      let expectedType = 'HOME';
+      let shelterId: string | null = null;
+      let otherCity: string | null = null;
 
-    const targetDisasterIds = [primaryDisaster.id, 'bd8b980a-028e-4057-af29-a70e76b13ed2'];
-    for (const did of targetDisasterIds) {
-      await prisma.expectedLocation.create({
+      if (assignedHome < plan.home) {
+        expectedType = 'HOME';
+        assignedHome++;
+      } else if (assignedShelter < plan.shelter) {
+        expectedType = 'SHELTER';
+        shelterId = sheltersData[shelterIndex % sheltersData.length].id;
+        shelterIndex++;
+        assignedShelter++;
+      } else if (assignedOther < plan.otherCity) {
+        expectedType = 'OTHER_CITY';
+        otherCity = OTHER_CITIES[otherCityIndex % OTHER_CITIES.length];
+        otherCityIndex++;
+        assignedOther++;
+      } else {
+        expectedType = 'UNKNOWN';
+      }
+
+      const targetDisasterIds = [primaryDisaster.id, 'bd8b980a-028e-4057-af29-a70e76b13ed2'];
+      for (const did of targetDisasterIds) {
+        await prisma.expectedLocation.create({
+          data: {
+            disasterId: did,
+            householdMemberId: item.member.id,
+            expectedType,
+            shelterId,
+            otherCity,
+            reconfirmedStatus: 'SAME_PLAN',
+            reconfirmedAt: new Date(),
+          },
+        });
+      }
+
+      // Emergency Status
+      let status = 'SAFE';
+      if (item.config.name === 'Palm Meadows Villa 101' || item.config.name === 'Salarpuria Sattva Greenage') {
+        if (i % 4 === 0) status = 'IN_DISTRESS';
+        else if (i % 5 === 0) status = 'UNACCOUNTED';
+      }
+      await prisma.emergencyStatus.create({
         data: {
-          disasterId: did,
+          disasterId: primaryDisaster.id,
           householdMemberId: item.member.id,
-          expectedType,
-          shelterId,
-          otherCity,
-          reconfirmedStatus: 'SAME_PLAN',
-          reconfirmedAt: new Date(),
+          status,
         },
       });
     }
-
-    // Emergency Status
-    let status = 'SAFE';
-    if (item.config.name === 'Palm Meadows Villa 101' || item.config.name === 'Salarpuria Sattva Greenage') {
-      if (i % 4 === 0) status = 'IN_DISTRESS';
-      else if (i % 5 === 0) status = 'UNACCOUNTED';
-    }
-    await prisma.emergencyStatus.create({
-      data: {
-        disasterId: primaryDisaster.id,
-        householdMemberId: item.member.id,
-        status,
-      },
-    });
-
   }
 
   // 9b. Seed realistic prioritized rescue requests across Bengaluru
