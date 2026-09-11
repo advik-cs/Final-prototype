@@ -104,12 +104,19 @@ export default function App() {
     }
   }, [currentUser?.role, duringTab]);
 
-  // Protect household and reconfirmation tabs from authority access in BEFORE mode
+  // Protect household and reconfirmation tabs from non-citizen access in BEFORE mode
   useEffect(() => {
-    if (currentUser?.role === 'AUTHORITY' && (beforeTab === 'household' || beforeTab === 'reconfirmation')) {
+    if (currentUser?.role !== 'CITIZEN' && (beforeTab === 'household' || beforeTab === 'reconfirmation')) {
       setBeforeTab('dashboard');
     }
   }, [currentUser?.role, beforeTab]);
+
+  // Protect safe tab from non-citizen access in DURING mode
+  useEffect(() => {
+    if (currentUser?.role !== 'CITIZEN' && duringTab === 'safe') {
+      setDuringTab('dashboard');
+    }
+  }, [currentUser?.role, duringTab]);
 
   const loadDisasters = async () => {
     try {
@@ -205,7 +212,7 @@ export default function App() {
             </ErrorBoundary>
           )}
 
-          {beforeTab === 'household' && currentUser.role !== 'AUTHORITY' && (
+          {beforeTab === 'household' && currentUser.role === 'CITIZEN' && (
             <HouseholdMembersView
               user={currentUser}
               activeDisaster={activeDisaster}
@@ -219,7 +226,7 @@ export default function App() {
             />
           )}
 
-          {beforeTab === 'reconfirmation' && currentUser.role !== 'AUTHORITY' && (
+          {beforeTab === 'reconfirmation' && currentUser.role === 'CITIZEN' && (
             <ReconfirmationView
               user={currentUser}
               activeDisaster={activeDisaster}
@@ -263,7 +270,7 @@ export default function App() {
             />
           )}
 
-          {duringTab === 'safe' && (
+          {duringTab === 'safe' && currentUser.role === 'CITIZEN' && (
             <AreYouSafeView
               user={currentUser}
               activeDisaster={activeDisaster}

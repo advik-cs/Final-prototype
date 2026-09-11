@@ -78,21 +78,18 @@ export const DuringDashboardView: React.FC<DuringDashboardViewProps> = ({
           </p>
         </div>
 
-        {/* SOS shortcut button */}
-        <button
-          type="button"
-          onClick={() => onNavigateTab('safe')}
-          className="px-5 py-3 rounded-2xl bg-[#DC2626] hover:bg-red-700 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-red-600/20 cursor-pointer animate-pulse"
-        >
-          <LifeBuoy className="w-4 h-4 text-white" />
-          <span>Report Safety / Request SOS</span>
-        </button>
+        {/* SOS shortcut button (Citizen only) */}
+        {user.role === 'CITIZEN' && (
+          <button
+            type="button"
+            onClick={() => onNavigateTab('safe')}
+            className="px-5 py-3 rounded-2xl bg-[#DC2626] hover:bg-red-700 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-red-600/20 cursor-pointer animate-pulse"
+          >
+            <LifeBuoy className="w-4 h-4 text-white" />
+            <span>Report Safety / Request SOS</span>
+          </button>
+        )}
       </div>
-
-      {/* Citizen Live Weather */}
-      {user.role === 'CITIZEN' && (
-        <LiveWeatherCard />
-      )}
 
       {/* 3 LARGE CLEAN COMMUNITY STATUS CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -192,6 +189,11 @@ export const DuringDashboardView: React.FC<DuringDashboardViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Citizen Current Weather — Directly Below Community Section */}
+      {user.role === 'CITIZEN' && (
+        <LiveWeatherCard />
+      )}
 
       {/* RESCUE OPERATIONS PIPELINE */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#C8D9E6] shadow-sm">

@@ -72,7 +72,7 @@ export const te: Partial<Record<TranslationKey, string>> = {
   'navigation.essentials': 'అవసరమైన వస్తువులు',
   'navigation.map': 'మ్యాప్',
   'navigation.household': 'కుటుంబ సభ్యులు',
-  'navigation.shelters': 'పునరావాస కేంద్రాలు',
+  'navigation.shelters': 'పునరావాస సమాచారం',
   'navigation.shelterInfo': 'పునరావాస సమాచారం',
   'navigation.reconfirmation': 'పునఃనిర్ధారణ',
   'navigation.occupancy': 'ఆశించిన సామర్థ్యం',

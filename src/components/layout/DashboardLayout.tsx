@@ -110,25 +110,25 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const beforeNavItems = [
     { id: 'dashboard', label: t('navigation.dashboard'), icon: LayoutDashboard },
+    ...(user.role !== 'CITIZEN' ? [{ id: 'weather', label: t('navigation.operationalWeather') || 'Operational Weather', icon: CloudRain }] : []),
     ...(user.role === 'CITIZEN' ? [{ id: 'essentials', label: t('navigation.essentials'), icon: ShieldCheck }] : []),
     { id: 'map', label: t('navigation.map'), icon: MapIcon },
-    ...(user.role !== 'AUTHORITY' ? [{ id: 'household', label: t('navigation.household'), icon: Users }] : []),
-    { id: 'shelters', label: user.role === 'CITIZEN' || user.role === 'AUTHORITY' ? t('navigation.shelterInfo') : t('navigation.shelters'), icon: Tent },
-    ...(user.role !== 'AUTHORITY' ? [{ id: 'reconfirmation', label: t('navigation.reconfirmation'), icon: CheckCircle2 }] : []),
+    ...(user.role === 'CITIZEN' ? [{ id: 'household', label: t('navigation.household'), icon: Users }] : []),
+    { id: 'shelters', label: t('navigation.shelterInfo'), icon: Tent },
+    ...(user.role === 'CITIZEN' ? [{ id: 'reconfirmation', label: t('navigation.reconfirmation'), icon: CheckCircle2 }] : []),
     ...(user.role !== 'CITIZEN' ? [{ id: 'occupancy', label: t('navigation.occupancy'), icon: Building2 }] : []),
     { id: 'threats', label: t('navigation.threats'), icon: AlertOctagon },
-    ...(user.role !== 'CITIZEN' ? [{ id: 'weather', label: t('navigation.operationalWeather') || 'Operational Weather', icon: CloudRain }] : []),
   ];
 
   const duringNavItems = [
     { id: 'dashboard', label: t('navigation.duringDashboard'), icon: LayoutDashboard },
-    { id: 'safe', label: t('navigation.safe'), icon: LifeBuoy },
+    ...(user.role !== 'CITIZEN' ? [{ id: 'weather', label: t('navigation.operationalWeather') || 'Operational Weather', icon: CloudRain }] : []),
+    ...(user.role === 'CITIZEN' ? [{ id: 'safe', label: t('navigation.safe'), icon: LifeBuoy }] : []),
     ...(user.role !== 'CITIZEN' ? [{ id: 'buildings', label: t('navigation.buildings'), icon: Building2 }] : []),
     { id: 'maps', label: t('navigation.maps'), icon: MapIcon },
     { id: 'rescue', label: t('navigation.rescue'), icon: Radio },
     ...(user.role !== 'CITIZEN' ? [
       { id: 'occupancy', label: t('navigation.occupancy'), icon: Building2 },
-      { id: 'weather', label: t('navigation.operationalWeather') || 'Operational Weather', icon: CloudRain },
     ] : []),
   ];
 

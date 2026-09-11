@@ -74,7 +74,7 @@ export const en = {
   'navigation.essentials': 'Essentials',
   'navigation.map': 'Map',
   'navigation.household': 'Household Members',
-  'navigation.shelters': 'Shelter Selection',
+  'navigation.shelters': 'Shelter Information',
   'navigation.shelterInfo': 'Shelter Information',
   'navigation.reconfirmation': 'Reconfirmation',
   'navigation.occupancy': 'Expected Occupancy',
@@ -88,7 +88,7 @@ export const en = {
 
   'nav.essentials': 'Essentials',
   'nav.household': 'Household Members',
-  'nav.shelters': 'Shelter Selection',
+  'nav.shelters': 'Shelter Information',
   'nav.threats': 'Predicted Threats',
   'nav.facilities': 'Emergency Facilities',
   'nav.reconfirmation': '30-Hour Reconfirmation',

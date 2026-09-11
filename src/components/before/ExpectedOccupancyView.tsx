@@ -120,7 +120,20 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
 
   // Initialize and manage Leaflet map instance
   useEffect(() => {
-    if (viewMode === 'CARDS' || !mapContainerRef.current) return;
+    if (loading || !mapContainerRef.current) return;
+
+    // Check if existing map instance is attached to a detached DOM node
+    if (mapInstanceRef.current) {
+      try {
+        const container = mapInstanceRef.current.getContainer();
+        if (!container || container !== mapContainerRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+        }
+      } catch {
+        mapInstanceRef.current = null;
+      }
+    }
 
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
@@ -131,7 +144,7 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
@@ -142,16 +155,38 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
 
     renderMapLayers();
 
-    const timer = setTimeout(() => {
-      if (mapInstanceRef.current) {
+    if (viewMode !== 'CARDS' && mapInstanceRef.current) {
+      mapInstanceRef.current.invalidateSize();
+      const t1 = setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 100);
+      const t2 = setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 300);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [loading, viewMode, buildings, zones, filterRisk]);
+
+  // Handle automatic resize when container dimension changes
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      if (mapInstanceRef.current && viewMode !== 'CARDS') {
         mapInstanceRef.current.invalidateSize();
       }
-    }, 200);
-
+    });
+    observer.observe(mapContainerRef.current);
     return () => {
-      clearTimeout(timer);
+      observer.disconnect();
     };
-  }, [viewMode, buildings, zones, filterRisk]);
+  }, [viewMode]);
 
   // Clean up map on unmount
   useEffect(() => {
@@ -368,15 +403,19 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
     if (viewMode === 'CARDS') {
       setViewMode('SPLIT');
     }
+    if (mapContainerRef.current) {
+      mapContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
     setTimeout(() => {
       if (mapInstanceRef.current && b.latitude && b.longitude) {
-        mapInstanceRef.current.flyTo([b.latitude, b.longitude], 14, { animate: true, duration: 1.2 });
+        mapInstanceRef.current.invalidateSize();
+        mapInstanceRef.current.flyTo([b.latitude, b.longitude], 14, { animate: true, duration: 1.0 });
         const marker = markerMapRef.current.get(b.buildingName);
         if (marker) {
           marker.openPopup();
         }
       }
-    }, 150);
+    }, 120);
   };
 
   const handleCenterBengaluru = () => {
@@ -660,62 +699,69 @@ export const ExpectedOccupancyView: React.FC<ExpectedOccupancyViewProps> = ({
       {/* Main Operational GIS Content */}
       {!loading && !errorMessage && (
         <div className="space-y-6">
-          {/* Map Visualization (Rendered in SPLIT or MAP mode) */}
-          {(viewMode === 'SPLIT' || viewMode === 'MAP') && (
-            <div className="bg-white rounded-3xl border border-[#C8D9E6]/80 overflow-hidden shadow-sm">
-              {/* Map Header with Controls */}
-              <div className="px-5 py-3.5 border-b border-[#F5EFEB] flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-white to-[#F5EFEB]/40">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-[#2F4156] text-white flex items-center justify-center shadow-sm">
-                    <MapIcon className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-[#2F4156]">
-                      Bengaluru Flood Plain & Building Telemetry GIS
-                    </h2>
-                    <p className="text-[11px] font-medium text-[#567C8D]">
-                      Showing {filteredBuildings.length} buildings overlaid on active RED & ORANGE inundation zones
-                    </p>
-                  </div>
+          {/* Map Visualization (Always mounted in DOM when loaded; toggled with CSS) */}
+          <div
+            className={`bg-white rounded-3xl border border-[#C8D9E6]/80 overflow-hidden shadow-sm transition-all duration-300 ${
+              viewMode === 'CARDS' ? 'hidden' : 'block'
+            }`}
+          >
+            {/* Map Header with Controls */}
+            <div className="px-5 py-3.5 border-b border-[#F5EFEB] flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-white to-[#F5EFEB]/40">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#2F4156] text-white flex items-center justify-center shadow-sm">
+                  <MapIcon className="w-4 h-4" />
                 </div>
-
-                {/* Map Legend & Center Button */}
-                <div className="flex items-center gap-4 text-xs font-semibold">
-                  <div className="hidden sm:flex items-center gap-3">
-                    <span className="flex items-center gap-1.5 text-red-700">
-                      <span className="w-3 h-3 rounded bg-red-600/30 border border-red-600" />
-                      RED Zone
-                    </span>
-                    <span className="flex items-center gap-1.5 text-orange-700">
-                      <span className="w-3 h-3 rounded bg-orange-500/30 border border-orange-500" />
-                      ORANGE Zone
-                    </span>
-                    <span className="flex items-center gap-1.5 text-emerald-700">
-                      <span className="w-3 h-3 rounded-full bg-emerald-600" />
-                      Safe Area
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleCenterBengaluru}
-                    className="px-3 py-1.5 rounded-xl bg-[#F5EFEB] text-[#2F4156] hover:bg-[#C8D9E6]/50 transition flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Crosshair className="w-3.5 h-3.5" />
-                    <span>Reset View</span>
-                  </button>
+                <div>
+                  <h2 className="text-sm font-bold text-[#2F4156]">
+                    Bengaluru Flood Plain & Building Telemetry GIS
+                  </h2>
+                  <p className="text-[11px] font-medium text-[#567C8D]">
+                    Showing {filteredBuildings.length} buildings overlaid on active RED & ORANGE inundation zones
+                  </p>
                 </div>
               </div>
 
-              {/* Map Canvas */}
-              <div
-                ref={mapContainerRef}
-                className={`w-full transition-all duration-300 ${
-                  viewMode === 'MAP' ? 'h-[600px]' : 'h-[400px] lg:h-[440px]'
-                }`}
-              />
+              {/* Map Legend & Center Button */}
+              <div className="flex items-center gap-4 text-xs font-semibold">
+                <div className="hidden sm:flex items-center gap-3">
+                  <span className="flex items-center gap-1.5 text-red-700">
+                    <span className="w-3 h-3 rounded bg-red-600/30 border border-red-600" />
+                    RED Zone
+                  </span>
+                  <span className="flex items-center gap-1.5 text-orange-700">
+                    <span className="w-3 h-3 rounded bg-orange-500/30 border border-orange-500" />
+                    ORANGE Zone
+                  </span>
+                  <span className="flex items-center gap-1.5 text-emerald-700">
+                    <span className="w-3 h-3 rounded-full bg-emerald-600" />
+                    Safe Area
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleCenterBengaluru}
+                  className="px-3 py-1.5 rounded-xl bg-[#F5EFEB] text-[#2F4156] hover:bg-[#C8D9E6]/50 transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Crosshair className="w-3.5 h-3.5" />
+                  <span>Reset View</span>
+                </button>
+              </div>
             </div>
-          )}
+
+            {/* Map Canvas */}
+            <div
+              ref={mapContainerRef}
+              style={{
+                height: viewMode === 'MAP' ? '650px' : '440px',
+                minHeight: viewMode === 'MAP' ? '500px' : '380px',
+                width: '100%',
+                position: 'relative',
+                zIndex: 1,
+              }}
+              className="w-full transition-all duration-300"
+            />
+          </div>
 
           {/* Buildings Empty State */}
           {filteredBuildings.length === 0 && (
